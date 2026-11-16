@@ -60,6 +60,8 @@ svg{flex-shrink:0}
 .src{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:16px;padding-top:16px;border-top:1px solid var(--tile)}
 .src .field{flex:1 1 280px}
 @media (max-width:900px){.ota-tiles{grid-template-columns:minmax(0,1fr)}}
+/* plan pomieszczenia */
+canvas.rc{touch-action:none;user-select:none;-webkit-user-select:none}
 /* --- czesc glowna --- */
 .main{margin-left:268px;padding:12px 12px 32px 0;min-height:100vh}
 .topbar{position:sticky;top:12px;z-index:20;display:flex;align-items:center;gap:12px;min-height:64px;padding:10px 12px 10px 20px;background:var(--card);border:1px solid var(--bd);border-radius:20px;margin-bottom:16px}
@@ -180,6 +182,7 @@ canvas{display:block;width:100%}
   <div class="brand"><div class="brand-logo"><svg viewBox="0 0 512 512" fill="none"><g transform="translate(0.000000,512.000000) scale(0.083333,-0.083333)" fill="var(--logo-body)"><path d="M2823 5499 c-21 -12 -169 -145 -330 -296 -1053 -995 -1400 -1330 -1417 -1367 -33 -69 -30 -2737 3 -2801 65 -127 32 -123 886 -123 l743 0 56 37 c82 54 93 85 112 297 81 891 701 1509 1598 1590 209 19 262 43 304 134 32 70 33 797 2 864 -19 39 -300 310 -1406 1357 -167 158 -321 296 -342 307 -51 28 -159 28 -209 1z m818 -1197 l703 -666 0 -173 0 -173 -63 -8 c-644 -82 -1264 -503 -1591 -1080 -118 -208 -237 -560 -260 -765 l-8 -69 -455 0 -455 0 0 1134 0 1134 703 666 c387 366 708 666 713 666 5 0 326 -300 713 -666z M4446 2399 c-623 -65 -1091 -556 -1140 -1195 -14 -180 73 -292 227 -292 142 0 234 103 235 263 1 400 378 767 790 769 298 2 333 427 38 460 -30 3 -97 1 -150 -5z"/></g><g transform="translate(0.000000,512.000000) scale(0.083333,-0.083333)" fill="#2CA9E1"><path d="M2815 4269 c-161 -92 -174 -315 -24 -418 l53 -36 0 -273 0 -272 207 -207 207 -206 68 51 69 52 -192 191 -191 191 0 240 0 241 41 22 c129 69 154 263 51 377 -69 76 -201 97 -289 47z m184 -149 c56 -70 16 -160 -71 -160 -60 0 -96 36 -96 94 0 91 113 136 167 66z M3402 3943 c-135 -58 -158 -247 -42 -333 l36 -27 0 -161 0 -161 92 -94 c107 -110 88 -105 192 -58 l82 36 -99 97 -99 97 0 125 0 125 42 36 c159 140 -10 403 -204 318z m120 -139 c42 -46 -11 -125 -66 -96 -40 22 -52 57 -31 91 24 35 67 38 97 5z M2406 3746 c-167 -78 -189 -294 -42 -396 46 -31 47 -34 48 -103 l0 -72 284 -285 284 -285 63 63 63 62 -263 264 c-295 296 -297 300 -214 357 216 150 14 506 -223 395z m153 -160 c37 -43 25 -97 -28 -124 -89 -47 -166 75 -87 138 38 30 83 24 115 -14z M1896 2495 c-235 -94 -133 -455 117 -415 43 7 48 4 160 -106 l116 -114 120 0 119 0 32 75 c18 41 32 79 32 84 0 5 -53 9 -117 9 l-118 0 -86 87 -86 87 1 72 c3 166 -145 278 -290 221z m122 -151 c43 -39 14 -124 -42 -124 -59 0 -89 77 -48 122 25 27 61 28 90 2z M4434 1436 c-317 -154 -213 -627 138 -626 433 2 445 632 12 651 -76 3 -99 -1 -150 -25z"/></g></svg></div><div class="brand-txt"><b>SIH Radar</b><span>mmWave 24 GHz</span></div></div>
   <div class="nav-sec">PODGLĄD</div>
   <button class="nav-item" data-p="pulpit" onclick="go('pulpit')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Pulpit</button>
+  <button class="nav-item" data-p="room" onclick="go('room')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 12h7v9M14 3v6h7"/></svg>Pomieszczenie</button>
   <button class="nav-item" data-p="radar" onclick="go('radar')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21 4.5 7.5A9 9 0 0 1 19.5 7.5z"/><path d="M12 21 8 13.5a4.5 4.5 0 0 1 8 0z"/></svg>Radar</button>
   <div class="nav-sec">USTAWIENIA</div>
   <button class="nav-item" data-p="siec" onclick="go('siec')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M2 9a14 14 0 0 1 20 0"/><circle cx="12" cy="19.5" r="1"/></svg>Sieć Wi‑Fi</button>
@@ -231,6 +234,46 @@ canvas{display:block;width:100%}
     </div>
   </section>
 
+  <!-- ===================== POMIESZCZENIE ===================== -->
+  <section class="page" id="p-room">
+    <div class="grid">
+      <div class="card full">
+        <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 12h7v9M14 3v6h7"/></svg><div class="ch-t">Plan pomieszczenia<small>przeciągnij radar w miejsce montażu · niebieski uchwyt obraca kierunek</small></div><span class="ota-chip" id="r-state">--</span></div>
+        <div class="radar-wrap"><canvas id="rc" class="rc" aria-label="Plan pomieszczenia z radarem"></canvas></div>
+        <div class="radar-opts">
+          <label class="tgl"><input type="checkbox" id="r-trail" checked onchange="$('o-trail').checked=this.checked;saveOpt()">Ślad ruchu</label>
+          <label class="tgl" title="Gdy osoba idąca w prawo pojawia się na planie po lewej - radar jest odwrócony. Zapisuje się od razu."><input type="checkbox" id="r-flip" onchange="saveFlip(this.checked)">Odwróć lewo/prawo</label>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V3h4M21 7V3h-4M3 17v4h4M21 17v4h-4"/></svg><div class="ch-t">Wymiary pokoju<small>w metrach, np. 4,20</small></div></div>
+        <div class="frow" style="margin-top:0">
+          <div class="field"><label for="r-w">Szerokość – ściana górna i dolna</label><input class="input" id="r-w" inputmode="decimal" oninput="roomFromInputs()"></div>
+          <div class="field"><label for="r-l">Długość – ściana lewa i prawa</label><input class="input" id="r-l" inputmode="decimal" oninput="roomFromInputs()"></div>
+        </div>
+        <p class="hint" style="margin-top:12px">Plan to prostokąt widziany z góry. Osoby wykryte poza obrysem pokoju są przygaszone – to zwykle odbicia albo sąsiednie pomieszczenie. Meble, drzwi i okna oraz strefy detekcji dodamy w kolejnych wersjach.</p>
+      </div>
+      <div class="card">
+        <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21 4.5 7.5A9 9 0 0 1 19.5 7.5z"/><circle cx="12" cy="11" r="1.5"/></svg><div class="ch-t">Położenie radaru<small>od lewego górnego rogu planu</small></div></div>
+        <div class="frow" style="margin-top:0">
+          <div class="field"><label for="r-x">Od lewej ściany (m)</label><input class="input" id="r-x" inputmode="decimal" oninput="roomFromInputs()"></div>
+          <div class="field"><label for="r-y">Od górnej ściany (m)</label><input class="input" id="r-y" inputmode="decimal" oninput="roomFromInputs()"></div>
+          <div class="field"><label for="r-rot">Kierunek (°)</label><input class="input" id="r-rot" inputmode="numeric" oninput="roomFromInputs()"></div>
+        </div>
+        <div class="frow">
+          <button type="button" class="btn" onclick="roomRot(-15)" title="Obróć w lewo o 15°">↺ 15°</button>
+          <button type="button" class="btn" onclick="roomRot(15)" title="Obróć w prawo o 15°">↻ 15°</button>
+          <button type="button" class="btn" onclick="roomCenterTop()">Środek górnej ściany</button>
+        </div>
+        <div class="frow">
+          <button type="button" class="btn primary" id="r-save" onclick="roomSave()">Zapisz w module</button>
+          <button type="button" class="btn" id="r-undo" onclick="roomUndo()">Cofnij zmiany</button>
+        </div>
+        <div class="msg" id="r-msg" hidden></div>
+      </div>
+    </div>
+  </section>
+
   <!-- ===================== RADAR ===================== -->
   <section class="page" id="p-radar">
     <div class="grid">
@@ -239,7 +282,7 @@ canvas{display:block;width:100%}
         <div class="radar-wrap"><canvas id="cv" aria-label="Pozycje wykrytych osób"></canvas></div>
         <div class="radar-opts">
           <label class="tgl"><input type="checkbox" id="o-trail" checked onchange="saveOpt()">Ślad ruchu</label>
-          <label class="tgl"><input type="checkbox" id="o-flip" onchange="saveOpt()">Odwróć lewo/prawo</label>
+          <label class="tgl"><input type="checkbox" id="o-flip" onchange="saveFlip(this.checked)">Odwróć lewo/prawo</label>
         </div>
       </div>
       <div class="card">
@@ -361,7 +404,7 @@ canvas{display:block;width:100%}
 <script>
 'use strict';
 var $ = function(id){ return document.getElementById(id); };
-var PAGES = { pulpit:['Podgląd','Pulpit'], radar:['Podgląd','Radar'], siec:['Ustawienia','Sieć Wi‑Fi'], akt:['Ustawienia','Aktualizacje'], system:['Ustawienia','System'] };
+var PAGES = { pulpit:['Podgląd','Pulpit'], room:['Podgląd','Pomieszczenie'], radar:['Podgląd','Radar'], siec:['Ustawienia','Sieć Wi‑Fi'], akt:['Ustawienia','Aktualizacje'], system:['Ustawienia','System'] };
 var COLORS = ['#3d8bff', '#17c964', '#f5a524'];
 var st = null, sens = null, opt = { trail:true, flip:false }, trails = {}, ws = null, wsOk = false, pollT = null;
 
@@ -376,7 +419,7 @@ function setTheme(t){
   else document.documentElement.setAttribute('data-theme', t);
   lsSet('sih_theme', t);
   document.querySelectorAll('.theme-seg button').forEach(function(b){ b.classList.toggle('on', b.dataset.th === t); });
-  drawRadar();
+  drawRadar(); drawRoom();
 }
 function navOpen(o){ document.body.classList.toggle('nav-open', o); }
 function go(p){
@@ -388,6 +431,7 @@ function go(p){
   $('tb-title').textContent = PAGES[p][1];
   navOpen(false);
   if (p === 'radar') setTimeout(drawRadar, 0);
+  if (p === 'room') setTimeout(drawRoom, 0);
   if (p === 'siec' && !$('nets').children.length && st && st.wifi.mode === 'ap') scan();
   if (p === 'akt') ghVersions();
 }
@@ -500,6 +544,7 @@ function onSensors(d){
   });
   Object.keys(trails).forEach(function(k){ trails[k] = trails[k].filter(function(p){ return now - p.t < 4000; }); });
   drawRadar();
+  if (!rdrag) drawRoom();
 }
 function setVal(id, v, u){ $(id).innerHTML = esc(v) + '<small>' + u + '</small>'; }
 function targetRows(r){
@@ -532,7 +577,7 @@ function drawRadar(){
   var R = 6000, A = 60 * Math.PI / 180, pad = 26;
   var s = Math.min((W / 2 - pad) / (R * Math.sin(A)), (H - pad - 18) / R);
   var ox = W / 2, oy = H - 18;
-  var flip = opt.flip ? -1 : 1;
+  var flip = room.flip ? -1 : 1;
   function P(x, y){ return [ox + flip * x * s, oy - y * s]; }
   var grid = cssVar('--grid'), mut = cssVar('--mut');
   // sektor
@@ -581,12 +626,229 @@ function drawRadar(){
     });
   }
 }
-window.addEventListener('resize', drawRadar);
+window.addEventListener('resize', function(){ drawRadar(); drawRoom(); });
 function saveOpt(){
-  opt.trail = $('o-trail').checked; opt.flip = $('o-flip').checked;
-  lsSet('sih_radar_opt', JSON.stringify(opt));
-  drawRadar();
+  opt.trail = $('o-trail').checked;
+  $('r-trail').checked = opt.trail;
+  lsSet('sih_radar_opt', JSON.stringify({ trail:opt.trail }));
+  drawRadar(); drawRoom();
 }
+
+// --- plan pomieszczenia ---
+// Współrzędne pokoju w mm: (0,0) to lewy górny róg planu, x w prawo, y w dół.
+// Kierunek radaru: 0° = patrzy w dół planu, dodatnie zgodnie z ruchem wskazówek.
+// Osie radaru: Y na wprost, X w prawo patrząc tak jak radar (odwrócenie: flip).
+var room = { set:false, w:4000, l:4000, x:2000, y:0, rot:0, flip:false }, roomSaved = '', rv = null, rdrag = null;
+var FOV = 60, RANGE = 6000, SNAP = 250;
+function roomCore(r){ r = r || room; return { w:r.w, l:r.l, x:r.x, y:r.y, rot:r.rot, flip:!!r.flip }; }
+function roomDirty(){ return JSON.stringify(roomCore()) !== roomSaved; }
+function normRot(a){ a = Math.round(a) % 360; if (a > 180) a -= 360; if (a <= -180) a += 360; return a; }
+function rdirs(){
+  var t = room.rot * Math.PI / 180;
+  return { f:[-Math.sin(t), Math.cos(t)], r:[-Math.cos(t), -Math.sin(t)] };
+}
+function toRoom(tx, ty){
+  var d = rdirs(), X = room.flip ? -tx : tx;
+  return [room.x + X * d.r[0] + ty * d.f[0], room.y + X * d.r[1] + ty * d.f[1]];
+}
+async function loadRoom(){
+  try {
+    var r = await (await fetch('/api/room', { cache:'no-store' })).json();
+    if (r && r.w) room = r;
+  } catch(e){}
+  roomSaved = JSON.stringify(roomCore());
+  roomInputs(); roomState();
+  $('o-flip').checked = $('r-flip').checked = !!room.flip;
+  drawRoom(); drawRadar();
+}
+function m2s(mm){ return nf(mm / 1000, 2); }
+function mval(id){ var v = parseFloat(String($(id).value).replace(',', '.').trim()); return isFinite(v) ? v : null; }
+function roomInputs(skip){
+  [['r-w', m2s(room.w)], ['r-l', m2s(room.l)], ['r-x', m2s(room.x)], ['r-y', m2s(room.y)], ['r-rot', String(room.rot)]]
+    .forEach(function(p){ if (p[0] !== skip) $(p[0]).value = p[1]; });
+}
+function roomState(){
+  var c = $('r-state'), d = roomDirty();
+  c.className = 'ota-chip' + (d ? ' new' : (room.set ? ' ok' : ''));
+  c.textContent = d ? 'niezapisane zmiany' : (room.set ? 'zapisano w module' : 'plan jeszcze niezapisany');
+  $('r-undo').disabled = !d;
+}
+function clampRadar(){
+  room.x = Math.max(0, Math.min(room.w, room.x));
+  room.y = Math.max(0, Math.min(room.l, room.y));
+}
+function roomFromInputs(){
+  var el = document.activeElement ? document.activeElement.id : '';
+  var w = mval('r-w'), l = mval('r-l'), x = mval('r-x'), y = mval('r-y'), rot = mval('r-rot');
+  if (w !== null && w >= 0.5 && w <= 20) room.w = Math.round(w * 1000);
+  if (l !== null && l >= 0.5 && l <= 20) room.l = Math.round(l * 1000);
+  if (x !== null) room.x = Math.round(x * 1000);
+  if (y !== null) room.y = Math.round(y * 1000);
+  if (rot !== null) room.rot = normRot(rot);
+  clampRadar();
+  roomInputs(el);
+  roomState(); drawRoom();
+}
+function roomChanged(){ roomInputs(); roomState(); drawRoom(); }
+function roomRot(d){ room.rot = normRot(room.rot + d); roomChanged(); }
+function roomCenterTop(){ room.x = Math.round(room.w / 2); room.y = 0; room.rot = 0; roomChanged(); }
+function roomUndo(){
+  var s = JSON.parse(roomSaved || '{}');
+  if (s.w) { room.w = s.w; room.l = s.l; room.x = s.x; room.y = s.y; room.rot = s.rot; room.flip = s.flip; }
+  roomChanged();
+}
+function rmsg(cls, txt){ var m = $('r-msg'); m.hidden = !txt; m.className = 'msg ' + cls; m.textContent = txt; }
+async function roomPost(body){
+  var r = await fetch('/api/room', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(body) });
+  var j = await r.json();
+  if (!r.ok || j.ok === false) throw new Error(j.error || 'Błąd zapisu');
+  return j;
+}
+async function roomSave(){
+  $('r-save').disabled = true;
+  try {
+    var j = await roomPost(roomCore());
+    room.set = true;
+    roomSaved = JSON.stringify(roomCore(j));
+    rmsg('ok', 'Plan zapisany w module.');
+    setTimeout(function(){ rmsg('', ''); }, 3000);
+  } catch(e) { rmsg('err', e.message === 'Failed to fetch' ? 'Brak połączenia z modułem.' : e.message); }
+  $('r-save').disabled = false;
+  roomState();
+}
+// Odwrócenie osi X zapisuje się od razu (razem z ostatnio zapisanym planem,
+// bez niezapisanych zmian położenia)
+async function saveFlip(v){
+  room.flip = v;
+  $('o-flip').checked = $('r-flip').checked = v;
+  drawRoom(); drawRadar();
+  var base = roomSaved ? JSON.parse(roomSaved) : roomCore();
+  base.flip = v;
+  try {
+    await roomPost(base);
+    roomSaved = JSON.stringify(base);
+    room.set = true;
+  } catch(e) { rmsg('err', 'Nie zapisano odwrócenia: ' + e.message); }
+  roomState();
+}
+
+function drawRoom(){
+  var cv = $('rc');
+  if (!cv || !$('p-room').classList.contains('on')) return;
+  var W = cv.clientWidth, pad = 34;
+  var H = Math.round(Math.min(Math.max((W - 2 * pad) * room.l / room.w + 2 * pad, 260), 640));
+  var dpr = window.devicePixelRatio || 1;
+  if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) {
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.height = H + 'px';
+  }
+  var g = cv.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, W, H);
+  var s = Math.min((W - 2 * pad) / room.w, (H - 2 * pad) / room.l);
+  var ox = (W - room.w * s) / 2, oy = (H - room.l * s) / 2;
+  function P(x, y){ return [ox + x * s, oy + y * s]; }
+  var txt = cssVar('--txt'), mut = cssVar('--mut'), grid = cssVar('--grid'), acc = cssVar('--accent');
+  var rw = room.w * s, rl = room.l * s;
+  // podłoga i siatka co 1 m
+  g.fillStyle = cssVar('--card'); g.fillRect(ox, oy, rw, rl);
+  g.strokeStyle = grid; g.lineWidth = 1;
+  for (var m = 1000; m < room.w; m += 1000) { g.beginPath(); g.moveTo(ox + m * s, oy); g.lineTo(ox + m * s, oy + rl); g.stroke(); }
+  for (m = 1000; m < room.l; m += 1000) { g.beginPath(); g.moveTo(ox, oy + m * s); g.lineTo(ox + rw, oy + m * s); g.stroke(); }
+  // zasięg radaru przycięty do pokoju
+  var R = P(room.x, room.y), d = rdirs(), phi = Math.atan2(d.f[1], d.f[0]), A = FOV * Math.PI / 180;
+  g.save();
+  g.beginPath(); g.rect(ox, oy, rw, rl); g.clip();
+  g.beginPath(); g.moveTo(R[0], R[1]); g.arc(R[0], R[1], RANGE * s, phi - A, phi + A); g.closePath();
+  g.fillStyle = cssVar('--sector'); g.fill();
+  g.globalAlpha = 0.6; g.fill(); g.globalAlpha = 1;   // na jasnym tle podłogi wyraźniej
+  g.strokeStyle = grid;
+  for (m = 1; m <= 6; m++) { g.beginPath(); g.arc(R[0], R[1], m * 1000 * s, phi - A, phi + A); g.stroke(); }
+  g.strokeStyle = acc; g.globalAlpha = 0.45; g.setLineDash([5, 5]);
+  [-A, A].forEach(function(a){ g.beginPath(); g.moveTo(R[0], R[1]); g.lineTo(R[0] + Math.cos(phi + a) * RANGE * s, R[1] + Math.sin(phi + a) * RANGE * s); g.stroke(); });
+  g.setLineDash([]); g.globalAlpha = 1;
+  g.restore();
+  // ściany i wymiary
+  g.strokeStyle = txt; g.lineWidth = 3; g.globalAlpha = 0.85;
+  g.strokeRect(ox, oy, rw, rl);
+  g.globalAlpha = 1;
+  g.fillStyle = mut; g.font = '600 12px Segoe UI, system-ui, sans-serif'; g.textAlign = 'center';
+  // wymiary pod planem i po prawej - górna i lewa ściana to typowe miejsca radaru
+  g.fillText(nf(room.w / 1000, 2) + ' m', ox + rw / 2, oy + rl + 20);
+  g.save(); g.translate(ox + rw + 16, oy + rl / 2); g.rotate(Math.PI / 2); g.fillText(nf(room.l / 1000, 2) + ' m', 0, 0); g.restore();
+  // ślady i osoby (poza pokojem przygaszone - odbicia albo sąsiedni pokój)
+  function inRoom(p){ return p[0] >= 0 && p[0] <= room.w && p[1] >= 0 && p[1] <= room.l; }
+  if (opt.trail) {
+    Object.keys(trails).forEach(function(k){
+      var a = trails[k]; if (a.length < 2) return;
+      g.strokeStyle = COLORS[(k - 1) % 3]; g.lineWidth = 2; g.lineCap = 'round';
+      for (var i = 1; i < a.length; i++) {
+        var p0 = toRoom(a[i - 1].x, a[i - 1].y), p1 = toRoom(a[i].x, a[i].y);
+        g.globalAlpha = i / a.length * 0.5 * (inRoom(p1) ? 1 : 0.4);
+        var s0 = P(p0[0], p0[1]), s1 = P(p1[0], p1[1]);
+        g.beginPath(); g.moveTo(s0[0], s0[1]); g.lineTo(s1[0], s1[1]); g.stroke();
+      }
+      g.globalAlpha = 1;
+    });
+  }
+  if (sens && sens.radar.online) {
+    sens.radar.targets.forEach(function(t){
+      var q = toRoom(t.x, t.y), p = P(q[0], q[1]), c = COLORS[(t.id - 1) % 3], inside = inRoom(q);
+      g.globalAlpha = inside ? 0.18 : 0.08; g.fillStyle = c;
+      g.beginPath(); g.arc(p[0], p[1], 18, 0, Math.PI * 2); g.fill();
+      g.globalAlpha = inside ? 1 : 0.4;
+      g.beginPath(); g.arc(p[0], p[1], 7, 0, Math.PI * 2); g.fill();
+      g.fillStyle = txt; g.font = '600 12px Segoe UI, system-ui, sans-serif'; g.textAlign = 'center';
+      g.fillText(String(t.id), p[0], p[1] - 24);
+      g.globalAlpha = 1;
+    });
+  }
+  // radar i uchwyt obrotu
+  var Hd = [R[0] + d.f[0] * 48, R[1] + d.f[1] * 48];
+  g.strokeStyle = acc; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(R[0], R[1]); g.lineTo(Hd[0], Hd[1]); g.stroke();
+  g.fillStyle = cssVar('--card'); g.beginPath(); g.arc(Hd[0], Hd[1], 8, 0, Math.PI * 2); g.fill(); g.stroke();
+  g.save(); g.translate(R[0], R[1]); g.rotate(phi - Math.PI / 2);
+  g.fillStyle = acc;
+  g.beginPath(); g.roundRect ? g.roundRect(-15, -6, 30, 12, 4) : g.rect(-15, -6, 30, 12); g.fill();
+  g.fillStyle = '#fff'; g.beginPath(); g.arc(0, 2, 2.5, 0, Math.PI * 2); g.fill();
+  g.restore();
+  rv = { s:s, ox:ox, oy:oy, R:R, H:Hd };
+}
+(function(){
+  var cv = $('rc');
+  function pt(e){ var b = cv.getBoundingClientRect(); return [e.clientX - b.left, e.clientY - b.top]; }
+  function near(a, b, r){ return Math.hypot(a[0] - b[0], a[1] - b[1]) <= r; }
+  cv.addEventListener('pointerdown', function(e){
+    if (!rv) return;
+    var p = pt(e);
+    rdrag = near(p, rv.H, 18) ? 'rot' : (near(p, rv.R, 24) ? 'move' : null);
+    if (!rdrag) return;
+    try { cv.setPointerCapture(e.pointerId); } catch(err){}
+    e.preventDefault();
+  });
+  cv.addEventListener('pointermove', function(e){
+    if (!rv) return;
+    var p = pt(e);
+    if (!rdrag) { cv.style.cursor = near(p, rv.H, 18) || near(p, rv.R, 24) ? 'grab' : 'default'; return; }
+    cv.style.cursor = 'grabbing';
+    var x = (p[0] - rv.ox) / rv.s, y = (p[1] - rv.oy) / rv.s;
+    if (rdrag === 'rot') {
+      room.rot = normRot(Math.round(Math.atan2(-(x - room.x), y - room.y) * 180 / Math.PI / 5) * 5);
+    } else {
+      room.x = Math.round(x / 10) * 10; room.y = Math.round(y / 10) * 10;
+      clampRadar();
+      // przy ścianie: przyciągnij i skieruj w głąb pokoju (w narożniku - na środek)
+      var L = room.x < SNAP, Rr = room.w - room.x < SNAP, T = room.y < SNAP, B = room.l - room.y < SNAP;
+      if (L) room.x = 0; if (Rr) room.x = room.w; if (T) room.y = 0; if (B) room.y = room.l;
+      if ((L || Rr) && (T || B)) room.rot = normRot(Math.atan2(-(room.w / 2 - room.x), room.l / 2 - room.y) * 180 / Math.PI);
+      else if (T) room.rot = 0; else if (B) room.rot = 180; else if (L) room.rot = -90; else if (Rr) room.rot = 90;
+    }
+    roomInputs(); roomState(); drawRoom();
+  });
+  function end(){ rdrag = null; cv.style.cursor = 'default'; }
+  cv.addEventListener('pointerup', end);
+  cv.addEventListener('pointercancel', end);
+})();
 
 // --- Wi-Fi ---
 function bars(rssi){
@@ -842,8 +1104,9 @@ async function reboot(){
 (function(){
   var t = lsGet('sih_theme') || 'auto';
   document.querySelectorAll('.theme-seg button').forEach(function(b){ b.classList.toggle('on', b.dataset.th === t); });
-  try { var o = JSON.parse(lsGet('sih_radar_opt') || '{}'); if (typeof o.trail === 'boolean') opt.trail = o.trail; if (typeof o.flip === 'boolean') opt.flip = o.flip; } catch(e){}
-  $('o-trail').checked = opt.trail; $('o-flip').checked = opt.flip;
+  try { var o = JSON.parse(lsGet('sih_radar_opt') || '{}'); if (typeof o.trail === 'boolean') opt.trail = o.trail; } catch(e){}
+  $('o-trail').checked = $('r-trail').checked = opt.trail;
+  loadRoom();
   var first = location.hash.slice(1);
   go(first || 'pulpit');
   loadStatus().then(function(){

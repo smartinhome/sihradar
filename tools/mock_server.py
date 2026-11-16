@@ -19,7 +19,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 T0 = time.time()
 STATE = {"mode": "ap" if "--ap" in sys.argv else "sta", "ssid": "" if "--ap" in sys.argv else "Dom",
-         "test": "idle", "test_t": 0.0, "test_ssid": "", "test_pass": "", "upd_auto": True, "ota_t": 0.0}
+         "test": "idle", "test_t": 0.0, "test_ssid": "", "test_pass": "", "upd_auto": True, "ota_t": 0.0,
+         "room": {"set": False, "w": 4000, "l": 4000, "x": 2000, "y": 0, "rot": 0, "flip": False}}
 
 NETS = [
     {"ssid": "Dom", "rssi": -48, "auth": 3, "ch": 6},
@@ -112,6 +113,8 @@ class H(BaseHTTPRequestHandler):
             return self.send(200, wifi_test())
         if p == "/api/ota/status":
             return self.send(200, ota_status())
+        if p == "/api/room":
+            return self.send(200, STATE["room"])
         self.send(404, {"ok": False, "error": "Nie ma takiej strony"})
 
     def do_POST(self):
@@ -127,6 +130,14 @@ class H(BaseHTTPRequestHandler):
             STATE["ota_t"] = time.time()
             return self.send(200, {"ok": True})
         body = json.loads(raw or b"{}")
+        if p == "/api/room":
+            r = {k: int(body[k]) for k in ("w", "l", "x", "y", "rot")}
+            if not (500 <= r["w"] <= 20000 and 500 <= r["l"] <= 20000):
+                return self.send(400, {"ok": False, "error": "Wymiary pokoju od 0,5 do 20 m."})
+            if not (0 <= r["x"] <= r["w"] and 0 <= r["y"] <= r["l"]):
+                return self.send(400, {"ok": False, "error": "Radar musi być w obrębie pokoju."})
+            STATE["room"] = dict(r, set=True, flip=bool(body.get("flip")))
+            return self.send(200, STATE["room"])
         if p == "/api/update":
             if "auto" in body:
                 STATE["upd_auto"] = bool(body["auto"])

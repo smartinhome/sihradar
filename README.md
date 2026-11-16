@@ -54,6 +54,19 @@ dostępowego i co minutę sprawdza, czy sieć wróciła. Przytrzymanie przycisku
 | żółty, miga | trwa łączenie z siecią wybraną w panelu |
 | biały | przycisk BOOT trzymany (po 5 s kasowanie sieci) |
 
+## Plan pomieszczenia
+
+Zakładka **Pomieszczenie**:
+1. Wpisz wymiary dwóch ścian pokoju w metrach, np. 4,20 × 3,60.
+2. Przeciągnij radar w miejsce montażu. Przy ścianie przyciąga się sam i patrzy w głąb
+   pokoju, a w narożniku – na środek.
+3. Kierunek zmieniasz niebieskim uchwytem, przyciskami ±15° albo wpisując kąt.
+
+Zasięg (6 m) i kąt (±60°) radaru są rysowane w obrysie pokoju. Osoby widać na planie
+na żywo, a te poza pokojem są przygaszone, bo to zwykle odbicia albo sąsiednie
+pomieszczenie. Plan zapisuje się w module, więc każde urządzenie widzi ten sam.
+Jeśli osoba idąca w prawo pojawia się po lewej, zaznacz **Odwróć lewo/prawo**.
+
 ## Aktualizacje
 
 Zakładka **Aktualizacje** w panelu działa jak w SIHOS17:
@@ -107,6 +120,8 @@ przed kompilacją firmware.
 | POST | `/api/wifi/connect` | `{"ssid":"…","password":"…"}` |
 | GET | `/api/wifi/test` | wynik próby połączenia (tryb AP) |
 | POST | `/api/reboot` | restart |
+| GET | `/api/room` | plan pokoju i położenie radaru (mm, stopnie) |
+| POST | `/api/room` | `{"w":4200,"l":3600,"x":2100,"y":0,"rot":0,"flip":false}` |
 | POST | `/api/ota/github` | aktualizacja z GitHuba (`?channel=beta&tag=…`, bez parametrów = oficjalna) |
 | POST | `/api/ota/url` | `{"url":"https://…/sih-radar.bin"}` |
 | POST | `/api/ota/upload` | plik `sih-radar.bin` w treści zapytania |

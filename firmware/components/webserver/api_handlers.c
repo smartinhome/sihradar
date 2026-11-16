@@ -4,6 +4,7 @@
 #include "ld2450.h"
 #include "bme688.h"
 #include "ota_manager.h"
+#include "room.h"
 #include "esp_ota_ops.h"
 #include "esp_app_desc.h"
 #include "esp_system.h"
@@ -188,6 +189,42 @@ static esp_err_t h_wifi_test(httpd_req_t *req) {
     char buf[256];
     wifi_manager_test_json(buf, sizeof(buf));
     return send_json(req, buf);
+}
+
+// --------------------------------------------------------------------------
+// Plan pomieszczenia
+// --------------------------------------------------------------------------
+
+static esp_err_t h_room_get(httpd_req_t *req) {
+    char buf[200];
+    room_json(buf, sizeof(buf));
+    return send_json(req, buf);
+}
+
+// {"w":4200,"l":3600,"x":2100,"y":0,"rot":0,"flip":false} - wszystko w mm i stopniach
+static esp_err_t h_room_set(httpd_req_t *req) {
+    cJSON *j = read_json(req);
+    if (!j) return send_err(req, "400 Bad Request", "Nieprawidłowe dane");
+    static const char *keys[] = { "w", "l", "x", "y", "rot" };
+    double v[5];
+    for (int i = 0; i < 5; i++) {
+        const cJSON *it = cJSON_GetObjectItem(j, keys[i]);
+        if (!cJSON_IsNumber(it)) {
+            cJSON_Delete(j);
+            return send_err(req, "400 Bad Request", "Brak wymiarów lub położenia radaru");
+        }
+        v[i] = it->valuedouble;
+    }
+    room_t r = {
+        .w_mm = (int32_t)v[0], .l_mm = (int32_t)v[1],
+        .x_mm = (int32_t)v[2], .y_mm = (int32_t)v[3],
+        .rot_deg = (int16_t)v[4],
+        .flip = cJSON_IsTrue(cJSON_GetObjectItem(j, "flip")),
+    };
+    cJSON_Delete(j);
+    const char *err = room_save(&r);
+    if (err) return send_err(req, "400 Bad Request", err);
+    return h_room_get(req);
 }
 
 // --------------------------------------------------------------------------
@@ -441,6 +478,8 @@ void api_register_handlers(httpd_handle_t server) {
         { .uri = "/api/wifi/connect", .method = HTTP_POST, .handler = h_wifi_connect },
         { .uri = "/api/wifi/test",    .method = HTTP_GET,  .handler = h_wifi_test },
         { .uri = "/api/reboot",       .method = HTTP_POST, .handler = h_reboot },
+        { .uri = "/api/room",         .method = HTTP_GET,  .handler = h_room_get },
+        { .uri = "/api/room",         .method = HTTP_POST, .handler = h_room_set },
         { .uri = "/api/ota/github",   .method = HTTP_POST, .handler = h_ota_github },
         { .uri = "/api/ota/url",      .method = HTTP_POST, .handler = h_ota_url },
         { .uri = "/api/ota/upload",   .method = HTTP_POST, .handler = h_ota_upload },

@@ -12,7 +12,7 @@ idf_component_register(
     SRCS "webserver.c" "api_handlers.c"
     INCLUDE_DIRS "."
     REQUIRES esp_http_server esp_wifi esp_timer esp_hw_support esp_app_format driver
-             json log app_update nvs_config wifi_manager ld2450 bme688 ota_manager
+             json log app_update nvs_config wifi_manager ld2450 bme688 ota_manager room
 )
 
 if(NOT CMAKE_BUILD_EARLY_EXPANSION)

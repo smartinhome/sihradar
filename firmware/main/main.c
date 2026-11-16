@@ -6,6 +6,7 @@
 #include "ld2450.h"
 #include "bme688.h"
 #include "ota_manager.h"
+#include "room.h"
 
 #include "nvs_flash.h"
 #include "esp_log.h"
@@ -67,6 +68,7 @@ void app_main(void) {
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
     nvs_config_init();
+    room_init();
     ota_manager_init();
     led_status_init(LED_PIN);
 
