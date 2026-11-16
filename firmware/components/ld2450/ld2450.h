@@ -11,6 +11,12 @@ typedef struct {
     uint32_t        errors;      // bajtow odrzuconych przez parser (szum na linii)
     uint8_t         fps;         // ramek w ostatniej sekundzie
     char            fw[24];      // wersja firmware radaru ("" = nieznana)
+    // Diagnostyka lacza (panel: zakladka Radar)
+    uint32_t        baud;        // biezaca predkosc UART
+    bool            scanning;    // radar milczy - szukamy jego predkosci
+    uint32_t        rx_bytes;    // bajtow odebranych od startu (rosnie = cos przychodzi)
+    uint8_t         raw[24];     // ostatnie odebrane bajty
+    uint8_t         raw_len;
 } ld2450_data_t;
 
 // UART + zadanie odbioru. Radar pracuje na 256000 bd.

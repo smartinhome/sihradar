@@ -87,6 +87,18 @@ static void test_ld2450(void) {
     static const uint8_t one[2] = { 0x01, 0x00 };
     CHECK(ld2450_build_cmd(cmd, LD2450_CMD_CONFIG_ON, one, 2) == 14);
     CHECK(memcmp(cmd, CFG_ON, 14) == 0);
+
+    // Indeksy predkosci z protokolu: 115200 = 5, 256000 = 7
+    CHECK(ld2450_baud_index(115200) == 5);
+    CHECK(ld2450_baud_index(256000) == 7);
+    CHECK(ld2450_baud_index(460800) == 8);
+    CHECK(ld2450_baud_index(12345) == 0);
+    // Komenda ustawienia 256000: FD FC FB FA 04 00 A1 00 07 00 04 03 02 01
+    static const uint8_t SET_BAUD[14] = { 0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xA1, 0x00, 0x07, 0x00,
+                                          0x04, 0x03, 0x02, 0x01 };
+    static const uint8_t b7[2] = { 0x07, 0x00 };
+    CHECK(ld2450_build_cmd(cmd, LD2450_CMD_SET_BAUD, b7, 2) == 14);
+    CHECK(memcmp(cmd, SET_BAUD, 14) == 0);
 }
 
 static void test_bme(void) {

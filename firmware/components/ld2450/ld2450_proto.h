@@ -56,3 +56,11 @@ bool ld2450_parse_fw(const uint8_t *ack, int len, char *out, int cap);
 #define LD2450_CMD_CONFIG_ON   0x00FF
 #define LD2450_CMD_CONFIG_OFF  0x00FE
 #define LD2450_CMD_READ_FW     0x00A0
+#define LD2450_CMD_SET_BAUD    0x00A1   // indeks predkosci, dziala po restarcie radaru
+#define LD2450_CMD_RESTART     0x00A3
+
+#define LD2450_DEFAULT_BAUD    256000
+
+// Predkosc -> indeks dla LD2450_CMD_SET_BAUD (1=9600 ... 7=256000, 8=460800).
+// 0 = predkosc nieobslugiwana przez radar.
+uint16_t ld2450_baud_index(uint32_t baud);

@@ -85,11 +85,16 @@ static int sensors_json(char *buf, int cap) {
     bme688_get(&b);
     char fw[48];
     json_esc(fw, sizeof(fw), r.fw);
+    char hex[sizeof(r.raw) * 3 + 1] = "";
+    for (int i = 0; i < r.raw_len; i++)
+        snprintf(hex + i * 3, sizeof(hex) - i * 3, "%02X ", r.raw[i]);
+    if (r.raw_len) hex[r.raw_len * 3 - 1] = 0;
     int n = snprintf(buf, cap,
         "{\"up\":%lld,\"radar\":{\"online\":%s,\"fw\":\"%s\",\"fps\":%u,\"count\":%u,"
-        "\"frames\":%lu,\"errors\":%lu,\"targets\":[",
+        "\"frames\":%lu,\"errors\":%lu,\"baud\":%lu,\"scan\":%s,\"rx\":%lu,\"raw\":\"%s\",\"targets\":[",
         (long long)(esp_timer_get_time() / 1000), r.online ? "true" : "false", fw,
-        r.fps, r.count, (unsigned long)r.frames, (unsigned long)r.errors);
+        r.fps, r.count, (unsigned long)r.frames, (unsigned long)r.errors,
+        (unsigned long)r.baud, r.scanning ? "true" : "false", (unsigned long)r.rx_bytes, hex);
     bool first = true;
     for (int i = 0; i < LD2450_MAX_TARGETS && n < cap; i++) {
         if (!r.t[i].valid) continue;

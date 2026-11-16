@@ -18,6 +18,11 @@ Wersja 0.1 udostępnia przez przeglądarkę:
 | HLK-LD2450 | 5V, GND, RX radaru ← **GP18**, TX radaru → **GP19** |
 | BME688 | 3V3, GND, SDA **GP20**, SCL **GP21** |
 
+Radar pracuje fabrycznie z prędkością 256000 bd. Firmware radaru 2.14 potrafi ją
+zmienić po aktualizacji przez HLKRadarTool. Gdy radar milczy, SIH Radar sam sprawdza
+wszystkie obsługiwane prędkości, a po znalezieniu właściwej ustawia radarowi z powrotem
+256000. Podgląd łącza (prędkość, odebrane bajty, surowe dane) jest w zakładce Radar.
+
 Szczegóły i uzasadnienie wyboru pinów są w [PINOUT.md](PINOUT.md), a rozpoznanie
 projektu w [RESEARCH.md](RESEARCH.md).
 

@@ -99,6 +99,13 @@ int ld2450_build_cmd(uint8_t *out, uint16_t cmd, const uint8_t *val, uint16_t vl
     return n;
 }
 
+uint16_t ld2450_baud_index(uint32_t baud) {
+    static const uint32_t B[] = { 9600, 19200, 38400, 57600, 115200, 230400, 256000, 460800 };
+    for (unsigned i = 0; i < sizeof(B) / sizeof(B[0]); i++)
+        if (B[i] == baud) return (uint16_t)(i + 1);
+    return 0;
+}
+
 bool ld2450_parse_fw(const uint8_t *ack, int len, char *out, int cap) {
     // FD FC FB FA | 0C 00 | A0 01 | status 00 00 | typ 00 01 | major (2) | minor (4) | ogon
     if (len < 22) return false;
