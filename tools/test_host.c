@@ -1,10 +1,14 @@
-// Testy czesci firmware bez ESP-IDF (parser LD2450, obliczenia BME688).
-// Kompilacja na komputerze, np.:
+// Testy czesci firmware bez ESP-IDF (parser LD2450, obliczenia BME688,
+// logika obecnosci i stref). Kompilacja na komputerze, np.:
 //   zig cc -std=c11 -Ifirmware/components/ld2450 -Ifirmware/components/bme688 \
+//     -Ifirmware/components/presence \
 //     tools/test_host.c firmware/components/ld2450/ld2450_proto.c \
-//     firmware/components/bme688/bme68x_calc.c -o test_host && ./test_host
+//     firmware/components/bme688/bme68x_calc.c \
+//     firmware/components/presence/presence_core.c -lm -o test_host && ./test_host
 #include "ld2450_proto.h"
 #include "bme68x_calc.h"
+#include "presence_core.h"
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -143,9 +147,128 @@ static void test_bme(void) {
            t, p / 100, h, bme68x_heater_res(&cal, 320, 25));
 }
 
+// --- obecnosc ---------------------------------------------------------------
+
+static bool near_f(float a, float b) { return fabsf(a - b) < 1.0f; }
+
+// Pokoj 4 x 4 m, radar na srodku gornej sciany, strefa 1 x 1 m na srodku
+static void pz_setup(pz_state_t *s) {
+    memset(s, 0, sizeof(*s));
+    pz_cfg_default(&s->cfg);
+    s->cfg.hold_s = 10;
+    s->cfg.zone_off_s = 3;
+    s->cfg.latch_min = 1;
+    s->room = (pz_room_t){ .set = true, .w = 4000, .l = 4000, .x = 2000, .y = 0 };
+    s->zones[0] = (pz_zone_t){ 1500, 1500, 2500, 2500, PZ_ZONE_DETECT, "Kanapa" };
+}
+
+static uint32_t clk;
+// n ramek co 100 ms z jednym celem (x, y radaru) albo bez celu
+static void frames(pz_state_t *s, int n, bool vis, int x0, int y0, int x1, int y1, int v) {
+    for (int k = 0; k < n; k++) {
+        pz_raw_t r[3] = {{0}};
+        if (vis) {
+            r[0].valid = true;
+            r[0].x = (int16_t)(x0 + (x1 - x0) * (k + 1) / n);
+            r[0].y = (int16_t)(y0 + (y1 - y0) * (k + 1) / n);
+            r[0].speed = (int16_t)v;
+        }
+        clk += 100;
+        pz_update(s, r, true, clk);
+    }
+}
+
+static void test_presence(void) {
+    float x, y;
+    pz_room_t r0 = { .set = true, .w = 4000, .l = 4000, .x = 2000, .y = 0, .rot = 0 };
+    pz_to_room(&r0, 1000, 2000, &x, &y);        // radar patrzy w dol: jego prawo = lewo planu
+    CHECK(near_f(x, 1000) && near_f(y, 2000));
+    r0.flip = true;
+    pz_to_room(&r0, 1000, 2000, &x, &y);
+    CHECK(near_f(x, 3000) && near_f(y, 2000));
+    pz_room_t r1 = { .set = true, .w = 4000, .l = 4000, .x = 0, .y = 2000, .rot = -90 };
+    pz_to_room(&r1, 500, 1000, &x, &y);         // na lewej scianie, patrzy w prawo
+    CHECK(near_f(x, 1000) && near_f(y, 2500));
+
+    pz_state_t s;
+    // Odrzucanie: za daleko, poza pokojem, strefa pomijana
+    pz_setup(&s);
+    s.zones[1] = (pz_zone_t){ 0, 0, 800, 800, PZ_ZONE_IGNORE, "Firanka" };
+    pz_raw_t r[3] = { { true, 0, 6500, 0 }, { true, 0, 4600, 0 }, { true, 1500, 500, 0 } };
+    clk = 1000;
+    pz_update(&s, r, true, clk);
+    CHECK(s.t[0].state == PZ_T_FAR);
+    CHECK(s.t[1].state == PZ_T_OUTSIDE);
+    CHECK(s.t[2].state == PZ_T_IGNORED);          // (500, 500) na planie
+    CHECK(!s.room_tr.occ);
+    s.cfg.room_only = false;
+    pz_update(&s, r, true, clk += 100);
+    CHECK(s.t[1].state == PZ_T_OK && s.room_tr.occ && s.room_tr.n == 1);
+
+    // Osoba wchodzi na kanape, siada i "znika" dla radaru -> pamiec
+    pz_setup(&s);
+    clk = 1000;
+    frames(&s, 20, true, 0, 3800, 0, 2000, 60);    // 2 s marszu od dolnej sciany
+    CHECK(s.zone_tr[0].occ && s.zone_tr[0].n == 1 && s.t[0].zones == 1);
+    frames(&s, 50, true, 0, 2000, 0, 2010, 0);     // 5 s bez ruchu
+    frames(&s, 100, false, 0, 0, 0, 0, 0);         // 10 s niewidoczna
+    CHECK(s.zone_tr[0].occ && s.zone_tr[0].latch && s.zone_tr[0].held == 1);
+    CHECK(s.room_tr.occ && s.room_tr.latch);
+    frames(&s, 520, false, 0, 0, 0, 0, 0);         // > 1 min limitu pamieci
+    CHECK(!s.zone_tr[0].occ && !s.room_tr.occ);
+
+    // Bez pamieci: strefa gasnie po opoznieniu
+    pz_setup(&s);
+    s.cfg.memory = false;
+    clk = 1000;
+    frames(&s, 20, true, 0, 3800, 0, 2000, 60);
+    frames(&s, 50, true, 0, 2000, 0, 2010, 0);
+    frames(&s, 20, false, 0, 0, 0, 0, 0);
+    CHECK(s.zone_tr[0].occ && !s.zone_tr[0].latch);  // 2 s < 3 s opoznienia
+    frames(&s, 15, false, 0, 0, 0, 0, 0);
+    CHECK(!s.zone_tr[0].occ);
+
+    // Wychodzi ze strefy i dalej ja widac -> zwykle opoznienie, bez pamieci
+    pz_setup(&s);
+    clk = 1000;
+    frames(&s, 30, true, 0, 2000, 0, 2010, 0);
+    frames(&s, 10, true, 0, 2000, 0, 3200, 120);
+    CHECK(!s.zone_tr[0].latch && s.room_tr.occ && !s.room_tr.latch);
+    frames(&s, 40, true, 0, 3200, 0, 3200, 0);
+    CHECK(!s.zone_tr[0].occ);
+
+    // Idzie do drzwi przy dolnej scianie i znika -> wyszla, pokoj gasnie po 10 s
+    pz_setup(&s);
+    clk = 1000;
+    frames(&s, 20, true, 0, 2000, 0, 3800, 90);
+    frames(&s, 50, false, 0, 0, 0, 0, 0);
+    CHECK(s.room_tr.occ && !s.room_tr.latch && s.room_tr.held == 0);
+    frames(&s, 60, false, 0, 0, 0, 0, 0);
+    CHECK(!s.room_tr.occ);
+
+    // Brak danych z radaru nie kasuje obecnosci
+    pz_setup(&s);
+    clk = 1000;
+    frames(&s, 10, true, 0, 2000, 0, 2000, 0);
+    pz_raw_t none[3] = {{0}};
+    for (int k = 0; k < 300; k++) pz_update(&s, none, false, clk += 100);
+    CHECK(s.room_tr.occ);
+
+    pz_cfg_t c;
+    pz_cfg_default(&c);
+    CHECK(pz_check_cfg(&c) == NULL);
+    c.max_dist_mm = 9000;
+    CHECK(pz_check_cfg(&c) != NULL);
+    pz_zone_t z = { 100, 100, 400, 900, PZ_ZONE_DETECT, "" };
+    CHECK(pz_check_zone(&z, NULL) == NULL);
+    z.x2 = 150;
+    CHECK(pz_check_zone(&z, NULL) != NULL);
+}
+
 int main(void) {
     test_ld2450();
     test_bme();
+    test_presence();
     if (fails) { printf("%d bledow\n", fails); return 1; }
     printf("OK - wszystkie testy przeszly\n");
     return 0;

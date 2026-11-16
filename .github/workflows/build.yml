@@ -21,8 +21,10 @@ jobs:
         run: |
           gcc -std=c11 -Wall -Wextra \
             -Ifirmware/components/ld2450 -Ifirmware/components/bme688 \
+            -Ifirmware/components/presence \
             tools/test_host.c firmware/components/ld2450/ld2450_proto.c \
-            firmware/components/bme688/bme68x_calc.c -lm -o test_host
+            firmware/components/bme688/bme68x_calc.c \
+            firmware/components/presence/presence_core.c -lm -o test_host
           ./test_host
 
       - name: Ustaw wersje firmware z nazwy tagu

@@ -6,6 +6,8 @@ napisany w ESP-IDF, na wzór SIHOS17.
 Wersja 0.1 udostępnia przez przeglądarkę:
 - podgląd osób wykrytych przez radar HLK-LD2450 (do 3 jednocześnie, pozycja,
   odległość, kąt, prędkość) z widokiem pola radaru na żywo,
+- plan pokoju ze strefami obecności i strefami pomijanymi oraz obecność liczoną w module
+  (z pamięcią osoby, która siedzi bez ruchu),
 - odczyty z BME688: temperaturę, wilgotność, ciśnienie i rezystancję gazu,
 - konfigurację Wi-Fi: wyszukiwanie sieci, sprawdzenie hasła i nowy adres modułu,
 - informacje o module i restart.
@@ -67,6 +69,49 @@ na żywo, a te poza pokojem są przygaszone, bo to zwykle odbicia albo sąsiedni
 pomieszczenie. Plan zapisuje się w module, więc każde urządzenie widzi ten sam.
 Jeśli osoba idąca w prawo pojawia się po lewej, zaznacz **Odwróć lewo/prawo**.
 
+## Strefy i obecność
+
+Pomysł zaczerpnięty z [esphome-radar-suite](https://github.com/bb12ett/esphome-radar-suite),
+napisany od nowa w firmware SIH Radar. Obecność liczy moduł 10 razy na sekundę, także
+bez otwartego panelu. Pulpit pokazuje ją razem z planem pokoju na żywo.
+
+Strefy (do 8) rysuje się w zakładce **Pomieszczenie**:
+- przeciągnij po podłodze na planie, żeby narysować strefę,
+- przeciągnij strefę, żeby ją przesunąć, a narożnik, żeby zmienić rozmiar,
+- albo wpisz wymiary w metrach,
+- albo wyznacz strefę sobą: stań w rogu i naciśnij **Róg 1**, przejdź do przeciwległego
+  rogu i naciśnij **Róg 2**.
+
+Rodzaje stref:
+- **obecność** – moduł podaje, czy ktoś w niej jest i ile osób,
+- **pomijaj** – cele w tej strefie nie istnieją (wentylator, firanka, odbicie w oknie).
+
+Moduł pomija też cele dalsze niż ustawiona odległość i (gdy plan jest zapisany) cele
+poza obrysem pokoju. W tabeli celów kolumna **Gdzie** mówi, w której strefie jest
+osoba albo dlaczego została pominięta.
+
+**Pamięć osoby nieruchomej.** Radar przestaje widzieć kogoś, kto siedzi lub leży bez
+ruchu. Jeśli osoba zniknęła w środku pokoju, moduł uznaje, że nadal tam jest. Pamięć
+kończy się, gdy osoba się ruszy albo minie ustawiony limit (domyślnie 30 min). Za
+wyjście uznaje się zniknięcie w ruchu przy ścianie, przy granicy zasięgu lub na boku
+pola widzenia (margines wyjścia, domyślnie 0,4 m), albo pojawienie się tuż obok
+strefy. Na Pulpicie pamięć widać na żółto.
+
+Ustawienia w karcie **Wykrywanie obecności**:
+
+| Ustawienie | Domyślnie | Opis |
+|---|---|---|
+| Maks. odległość | 6 m | dalsze cele są pomijane |
+| Podtrzymanie w pokoju | 30 s | tyle trwa obecność po zniknięciu ostatniej osoby |
+| Opóźnienie stref | 5 s | to samo dla stref |
+| Margines wyjścia | 0,4 m | patrz wyżej |
+| Pamięć osoby nieruchomej | wł., 30 min | patrz wyżej |
+| Tylko w obrysie pokoju | wł. | cele poza planem nie włączają obecności |
+
+W zakładce Radar są przyciski **Restart radaru** i **Ustawienia fabryczne radaru**.
+Ustawienia fabryczne kasują to, co zapisano w samym radarze (np. aplikacją HLKRadarTool).
+Plan pokoju i strefy SIH Radar zostają.
+
 ## Aktualizacje
 
 Zakładka **Aktualizacje** w panelu działa jak w SIHOS17:
@@ -106,7 +151,8 @@ Otwórz http://localhost:8718. Opcja `--ap` udaje pierwsze uruchomienie. Hasło
 ## Testy
 
 `tools/test_host.c` sprawdza parser ramek LD2450 (przykład z dokumentacji radaru,
-urwane ramki, odczyt wersji) i obliczenia BME688. Uruchamia się je w GitHub Actions
+urwane ramki, odczyt wersji), obliczenia BME688 oraz logikę obecności: przeliczanie na
+plan, strefy pomijane, pamięć osoby nieruchomej i rozpoznawanie wyjścia. Uruchamia się je w GitHub Actions
 przed kompilacją firmware.
 
 ## API
@@ -114,7 +160,7 @@ przed kompilacją firmware.
 | Metoda | Adres | Opis |
 |---|---|---|
 | GET | `/api/status` | firmware, pamięć, Wi-Fi |
-| GET | `/api/sensors` | radar i BME688 (ten sam JSON co WebSocket) |
+| GET | `/api/sensors` | radar, BME688 i obecność `pres` (ten sam JSON co WebSocket) |
 | WS | `/ws` | dane czujników na żywo, ok. 10 razy na sekundę |
 | GET | `/api/wifi/scan` | lista sieci |
 | POST | `/api/wifi/connect` | `{"ssid":"…","password":"…"}` |
@@ -122,6 +168,9 @@ przed kompilacją firmware.
 | POST | `/api/reboot` | restart |
 | GET | `/api/room` | plan pokoju i położenie radaru (mm, stopnie) |
 | POST | `/api/room` | `{"w":4200,"l":3600,"x":2100,"y":0,"rot":0,"flip":false}` |
+| GET | `/api/zones` | ustawienia obecności i strefy |
+| POST | `/api/zones` | `{"cfg":{"dist":6000,"hold":30,"zoff":5,"latch":30,"exit":400,"mem":true,"room":true},"zones":[{"name":"Kanapa","t":1,"x1":2600,"y1":1200,"x2":3800,"y2":2400}]}` (`t`: 1 obecność, 2 pomijaj; mm na planie) |
+| POST | `/api/radar` | `{"action":"restart"}` albo `{"action":"factory"}` |
 | POST | `/api/ota/github` | aktualizacja z GitHuba (`?channel=beta&tag=…`, bez parametrów = oficjalna) |
 | POST | `/api/ota/url` | `{"url":"https://…/sih-radar.bin"}` |
 | POST | `/api/ota/upload` | plik `sih-radar.bin` w treści zapytania |

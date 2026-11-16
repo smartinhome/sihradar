@@ -7,9 +7,9 @@
 <link rel="icon" href="data:,">
 <script>try{var t=localStorage.getItem('sih_theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <style>
-:root{--bg:#0b0b0d;--card:#18181b;--tile:#232326;--track:#27272a;--bd:transparent;--txt:#fcfcfc;--mut:#a1a1aa;--chip:#27272a;--chiptxt:#e4e4e7;--accent:#3d8bff;--ok:#17c964;--oktxt:#81dc98;--oksoft:rgba(23,201,100,.15);--warn:#f0b429;--err:#ff383c;--errtxt:#ff7d74;--errsoft:rgba(255,56,60,.14);--logo-body:#fff;--grid:rgba(255,255,255,.08);--sector:rgba(61,139,255,.07);--sh:0 20px 50px rgba(0,0,0,.5)}
-@media (prefers-color-scheme:light){:root:not([data-theme=dark]){--bg:#f4f4f5;--card:#fff;--tile:#f4f4f5;--track:#e4e4e7;--bd:#e4e4e7;--txt:#18181b;--mut:#71717a;--chip:#f4f4f5;--chiptxt:#3f3f46;--accent:#2563eb;--oktxt:#15803d;--oksoft:rgba(23,201,100,.14);--err:#e5252a;--errtxt:#c81e1e;--errsoft:rgba(229,37,42,.1);--logo-body:#18181b;--grid:rgba(0,0,0,.09);--sector:rgba(37,99,235,.06);--sh:0 20px 50px rgba(0,0,0,.15)}}
-:root[data-theme=light]{--bg:#f4f4f5;--card:#fff;--tile:#f4f4f5;--track:#e4e4e7;--bd:#e4e4e7;--txt:#18181b;--mut:#71717a;--chip:#f4f4f5;--chiptxt:#3f3f46;--accent:#2563eb;--oktxt:#15803d;--oksoft:rgba(23,201,100,.14);--err:#e5252a;--errtxt:#c81e1e;--errsoft:rgba(229,37,42,.1);--logo-body:#18181b;--grid:rgba(0,0,0,.09);--sector:rgba(37,99,235,.06);--sh:0 20px 50px rgba(0,0,0,.15)}
+:root{--bg:#0b0b0d;--card:#18181b;--tile:#232326;--track:#27272a;--bd:transparent;--txt:#fcfcfc;--mut:#a1a1aa;--chip:#27272a;--chiptxt:#e4e4e7;--accent:#3d8bff;--ok:#17c964;--oktxt:#81dc98;--oksoft:rgba(23,201,100,.15);--warn:#f0b429;--warntxt:#f5c451;--warnsoft:rgba(240,180,41,.15);--err:#ff383c;--errtxt:#ff7d74;--errsoft:rgba(255,56,60,.14);--logo-body:#fff;--grid:rgba(255,255,255,.08);--sector:rgba(61,139,255,.07);--sh:0 20px 50px rgba(0,0,0,.5)}
+@media (prefers-color-scheme:light){:root:not([data-theme=dark]){--bg:#f4f4f5;--card:#fff;--tile:#f4f4f5;--track:#e4e4e7;--bd:#e4e4e7;--txt:#18181b;--mut:#71717a;--chip:#f4f4f5;--chiptxt:#3f3f46;--accent:#2563eb;--oktxt:#15803d;--oksoft:rgba(23,201,100,.14);--err:#e5252a;--errtxt:#c81e1e;--errsoft:rgba(229,37,42,.1);--warntxt:#a16207;--warnsoft:rgba(234,179,8,.16);--logo-body:#18181b;--grid:rgba(0,0,0,.09);--sector:rgba(37,99,235,.06);--sh:0 20px 50px rgba(0,0,0,.15)}}
+:root[data-theme=light]{--bg:#f4f4f5;--card:#fff;--tile:#f4f4f5;--track:#e4e4e7;--bd:#e4e4e7;--txt:#18181b;--mut:#71717a;--chip:#f4f4f5;--chiptxt:#3f3f46;--accent:#2563eb;--oktxt:#15803d;--oksoft:rgba(23,201,100,.14);--err:#e5252a;--errtxt:#c81e1e;--errsoft:rgba(229,37,42,.1);--warntxt:#a16207;--warnsoft:rgba(234,179,8,.16);--logo-body:#18181b;--grid:rgba(0,0,0,.09);--sector:rgba(37,99,235,.06);--sh:0 20px 50px rgba(0,0,0,.15)}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:var(--bg)}
 body{color:var(--txt);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;font-size:14px;min-height:100vh;-webkit-text-size-adjust:100%}
@@ -60,8 +60,34 @@ svg{flex-shrink:0}
 .src{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:16px;padding-top:16px;border-top:1px solid var(--tile)}
 .src .field{flex:1 1 280px}
 @media (max-width:900px){.ota-tiles{grid-template-columns:minmax(0,1fr)}}
-/* plan pomieszczenia */
+/* plan pomieszczenia i strefy */
 canvas.rc{touch-action:none;user-select:none;-webkit-user-select:none}
+.ota-chip.mem{background:var(--warnsoft);color:var(--warntxt)}
+.zlist{display:flex;flex-direction:column;gap:8px}
+.zrow{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 12px;border-radius:14px;background:var(--tile);border:1px solid transparent;cursor:pointer}
+.zrow.sel{border-color:var(--accent)}
+.zrow .zc{width:12px;height:12px;border-radius:4px;flex-shrink:0}
+.zrow .input{height:36px;flex:1 1 120px;background:var(--card)}
+.select{height:36px;padding:0 8px;border-radius:10px;border:1px solid var(--track);background:var(--card);color:var(--txt);font:inherit;outline:none}
+.select:focus{border-color:var(--accent)}
+.zst{min-width:74px;text-align:center}
+.zdel{width:34px;height:34px;flex-shrink:0;border:none;border-radius:10px;background:none;color:var(--mut);font-size:20px;line-height:1;cursor:pointer}
+.zdel:hover{background:var(--errsoft);color:var(--errtxt)}
+.zedit{margin-top:14px;padding:14px;border-radius:16px;background:var(--tile)}
+.zedit .input{background:var(--card)}
+.zedit-h{font-weight:600;margin-bottom:10px}
+.zchips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.zchips:empty{display:none}
+.zchip{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 11px;border-radius:10px;background:var(--tile);color:var(--chiptxt);font-size:13px;font-weight:500}
+.zchip i{width:9px;height:9px;border-radius:3px}
+.zchip.on{background:var(--oksoft);color:var(--oktxt)}
+.zchip.mem{background:var(--warnsoft);color:var(--warntxt)}
+.chk{display:flex;align-items:flex-start;gap:10px;padding:10px 0;cursor:pointer;line-height:1.4}
+.chk input{margin-top:3px;accent-color:var(--accent)}
+.chk small{display:block;color:var(--mut);font-size:12px}
+.fgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:340px){.fgrid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:520px){.zrow{flex-wrap:wrap}.zrow .input{flex-basis:calc(100% - 40px)}}
 /* --- czesc glowna --- */
 .main{margin-left:268px;padding:12px 12px 32px 0;min-height:100vh}
 .topbar{position:sticky;top:12px;z-index:20;display:flex;align-items:center;gap:12px;min-height:64px;padding:10px 12px 10px 20px;background:var(--card);border:1px solid var(--bd);border-radius:20px;margin-bottom:16px}
@@ -94,6 +120,7 @@ canvas.rc{touch-action:none;user-select:none;-webkit-user-select:none}
 .presence{display:flex;align-items:center;gap:18px}
 .pres-ring{width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;background:var(--tile);color:var(--mut);transition:all .3s;flex-shrink:0}
 .pres-ring.on{background:var(--oksoft);color:var(--ok);box-shadow:0 0 0 6px var(--oksoft)}
+.pres-ring.mem{background:var(--warnsoft);color:var(--warn);box-shadow:0 0 0 6px var(--warnsoft)}
 .pres-txt b{display:block;font-size:20px;font-weight:600}
 .pres-txt span{color:var(--mut);font-size:13px}
 /* wiersze klucz-wartosc */
@@ -215,6 +242,7 @@ canvas{display:block;width:100%}
       <div class="card">
         <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M4 21v-1a7 7 0 0 1 14 0v1"/></svg><div class="ch-t">Obecność<small>radar HLK-LD2450</small></div></div>
         <div class="presence"><div class="pres-ring" id="pres-n">–</div><div class="pres-txt"><b id="pres-t">Czekam na dane…</b><span id="pres-s">&nbsp;</span></div></div>
+        <div class="zchips" id="pres-z"></div>
         <div class="warnbox" id="rd-warn">Brak danych z radaru. Moduł sam sprawdza wszystkie prędkości UART (np. po aktualizacji firmware radaru). Jeśli to nie pomoże, sprawdź zasilanie 5 V oraz przewody: <b>GP18 → RX</b> radaru i <b>GP19 ← TX</b> radaru. Szczegóły w zakładce Radar.</div>
       </div>
       <div class="card">
@@ -228,8 +256,12 @@ canvas{display:block;width:100%}
         <div class="warnbox" id="bme-warn">Nie znaleziono czujnika BME688. Sprawdź przewody: <b>SDA → GP20</b>, <b>SCL → GP21</b>, zasilanie <b>3V3</b> i GND. Moduł szuka czujnika co 10 s.</div>
       </div>
       <div class="card full">
+        <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 12h7v9M14 3v6h7"/></svg><div class="ch-t">Pokój na żywo<small>osoby i strefy na planie pomieszczenia</small></div><button class="btn" onclick="go('room')">Edytuj plan i strefy</button></div>
+        <div class="radar-wrap"><canvas id="pc" aria-label="Plan pokoju z osobami i strefami"></canvas></div>
+      </div>
+      <div class="card full">
         <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21 4.5 7.5A9 9 0 0 1 19.5 7.5z"/><circle cx="12" cy="11" r="1.5"/></svg><div class="ch-t">Wykryte cele<small>odległość i kąt względem radaru</small></div><button class="btn" onclick="go('radar')">Podgląd radaru</button></div>
-        <table><thead><tr><th>Cel</th><th>Odległość</th><th>Kąt</th><th>X</th><th>Y</th><th>Prędkość</th></tr></thead><tbody id="tg-1"></tbody></table>
+        <table><thead><tr><th>Cel</th><th>Odległość</th><th>Kąt</th><th>X</th><th>Y</th><th>Prędkość</th><th>Gdzie</th></tr></thead><tbody id="tg-1"></tbody></table>
       </div>
     </div>
   </section>
@@ -238,12 +270,16 @@ canvas{display:block;width:100%}
   <section class="page" id="p-room">
     <div class="grid">
       <div class="card full">
-        <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 12h7v9M14 3v6h7"/></svg><div class="ch-t">Plan pomieszczenia<small>przeciągnij radar w miejsce montażu · niebieski uchwyt obraca kierunek</small></div><span class="ota-chip" id="r-state">--</span></div>
+        <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 12h7v9M14 3v6h7"/></svg><div class="ch-t">Plan pomieszczenia<small>przeciągnij radar w miejsce montażu · niebieski uchwyt obraca kierunek · przeciągnij po podłodze, żeby narysować strefę</small></div><span class="ota-chip" id="r-state">--</span></div>
         <div class="radar-wrap"><canvas id="rc" class="rc" aria-label="Plan pomieszczenia z radarem"></canvas></div>
         <div class="radar-opts">
           <label class="tgl"><input type="checkbox" id="r-trail" checked onchange="$('o-trail').checked=this.checked;saveOpt()">Ślad ruchu</label>
           <label class="tgl" title="Gdy osoba idąca w prawo pojawia się na planie po lewej - radar jest odwrócony. Zapisuje się od razu."><input type="checkbox" id="r-flip" onchange="saveFlip(this.checked)">Odwróć lewo/prawo</label>
+          <span style="flex:1"></span>
+          <button type="button" class="btn" id="r-undo" onclick="roomUndo()">Cofnij zmiany</button>
+          <button type="button" class="btn primary" id="r-save" onclick="roomSave()">Zapisz w module</button>
         </div>
+        <div class="msg" id="r-msg" hidden></div>
       </div>
       <div class="card">
         <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V3h4M21 7V3h-4M3 17v4h4M21 17v4h-4"/></svg><div class="ch-t">Wymiary pokoju<small>w metrach, np. 4,20</small></div></div>
@@ -251,7 +287,7 @@ canvas{display:block;width:100%}
           <div class="field"><label for="r-w">Szerokość – ściana górna i dolna</label><input class="input" id="r-w" inputmode="decimal" oninput="roomFromInputs()"></div>
           <div class="field"><label for="r-l">Długość – ściana lewa i prawa</label><input class="input" id="r-l" inputmode="decimal" oninput="roomFromInputs()"></div>
         </div>
-        <p class="hint" style="margin-top:12px">Plan to prostokąt widziany z góry. Osoby wykryte poza obrysem pokoju są przygaszone – to zwykle odbicia albo sąsiednie pomieszczenie. Meble, drzwi i okna oraz strefy detekcji dodamy w kolejnych wersjach.</p>
+        <p class="hint" style="margin-top:12px">Plan to prostokąt widziany z góry. Osoby wykryte poza obrysem pokoju są przygaszone – to zwykle odbicia albo sąsiednie pomieszczenie. Meble, drzwi i okna dodamy w kolejnych wersjach.</p>
       </div>
       <div class="card">
         <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21 4.5 7.5A9 9 0 0 1 19.5 7.5z"/><circle cx="12" cy="11" r="1.5"/></svg><div class="ch-t">Położenie radaru<small>od lewego górnego rogu planu</small></div></div>
@@ -265,11 +301,45 @@ canvas{display:block;width:100%}
           <button type="button" class="btn" onclick="roomRot(15)" title="Obróć w prawo o 15°">↻ 15°</button>
           <button type="button" class="btn" onclick="roomCenterTop()">Środek górnej ściany</button>
         </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5" stroke-dasharray="3 2"/><path d="M13 7h4v2M7 13v4h2"/></svg><div class="ch-t">Strefy<small>do 8 · obecność albo pomijana (wentylator, firanka, odbicie)</small></div></div>
+        <div class="zlist" id="z-list"></div>
         <div class="frow">
-          <button type="button" class="btn primary" id="r-save" onclick="roomSave()">Zapisz w module</button>
-          <button type="button" class="btn" id="r-undo" onclick="roomUndo()">Cofnij zmiany</button>
+          <button type="button" class="btn" id="z-add1" onclick="zAdd(1)">+ Strefa obecności</button>
+          <button type="button" class="btn" id="z-add2" onclick="zAdd(2)">+ Strefa pomijana</button>
         </div>
-        <div class="msg" id="r-msg" hidden></div>
+        <div class="zedit" id="z-edit" hidden>
+          <div class="zedit-h" id="z-edit-t">Strefa</div>
+          <div class="fgrid">
+            <div class="field"><label for="z-x">Od lewej ściany (m)</label><input class="input" id="z-x" inputmode="decimal" oninput="zoneFromInputs()"></div>
+            <div class="field"><label for="z-y">Od górnej ściany (m)</label><input class="input" id="z-y" inputmode="decimal" oninput="zoneFromInputs()"></div>
+            <div class="field"><label for="z-w">Szerokość (m)</label><input class="input" id="z-w" inputmode="decimal" oninput="zoneFromInputs()"></div>
+            <div class="field"><label for="z-l">Długość (m)</label><input class="input" id="z-l" inputmode="decimal" oninput="zoneFromInputs()"></div>
+          </div>
+          <p class="hint" style="margin-top:12px">Albo wyznacz strefę sobą: stań w jednym rogu i naciśnij <b>Róg 1</b>, przejdź do przeciwległego i naciśnij <b>Róg 2</b>. W pokoju powinna być tylko jedna osoba.</p>
+          <div class="frow">
+            <button type="button" class="btn" onclick="zCorner(1)">Róg 1 – tu stoję</button>
+            <button type="button" class="btn" onclick="zCorner(2)">Róg 2 – tu stoję</button>
+          </div>
+        </div>
+        <div class="msg" id="z-msg" hidden></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M4 21v-1a7 7 0 0 1 14 0v1"/><path d="M19 3v4M21 5h-4"/></svg><div class="ch-t">Wykrywanie obecności<small>liczone w module, także bez otwartego panelu</small></div></div>
+        <div class="fgrid">
+          <div class="field"><label for="c-dist">Maks. odległość od radaru (m)</label><input class="input" id="c-dist" inputmode="decimal" oninput="cfgFromInputs()"></div>
+          <div class="field"><label for="c-exit">Margines wyjścia (m)</label><input class="input" id="c-exit" inputmode="decimal" oninput="cfgFromInputs()"></div>
+          <div class="field"><label for="c-hold">Podtrzymanie w pokoju (s)</label><input class="input" id="c-hold" inputmode="numeric" oninput="cfgFromInputs()"></div>
+          <div class="field"><label for="c-zoff">Opóźnienie stref (s)</label><input class="input" id="c-zoff" inputmode="numeric" oninput="cfgFromInputs()"></div>
+        </div>
+        <label class="chk" style="margin-top:6px"><input type="checkbox" id="c-room" onchange="cfgFromInputs()"><span>Licz tylko osoby w obrysie pokoju<small>odbicia i sąsiedni pokój nie włączają obecności</small></span></label>
+        <label class="chk"><input type="checkbox" id="c-mem" onchange="cfgFromInputs()"><span>Pamięć osoby nieruchomej<small>radar gubi kogoś, kto siedzi lub leży bez ruchu. Jeśli zniknął w środku pokoju, a nie przy ścianie czy granicy zasięgu, moduł uznaje, że nadal tam jest.</small></span></label>
+        <div class="frow" style="margin-top:4px">
+          <div class="field"><label for="c-latch">Pamiętaj najwyżej (min)</label><input class="input" id="c-latch" inputmode="numeric" oninput="cfgFromInputs()"></div>
+          <button type="button" class="btn primary" id="z-save" onclick="roomSave()">Zapisz w module</button>
+        </div>
+        <p class="hint" style="margin-top:12px"><b>Margines wyjścia</b> – osoba, która znika w ruchu tak blisko ściany, granicy zasięgu albo boku pola widzenia, wyszła. <b>Podtrzymanie</b> – po tylu sekundach bez nikogo pokój jest pusty.</p>
       </div>
     </div>
   </section>
@@ -287,7 +357,7 @@ canvas{display:block;width:100%}
       </div>
       <div class="card">
         <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg><div class="ch-t">Cele<small>do 3 osób jednocześnie</small></div></div>
-        <table><thead><tr><th>Cel</th><th>Odległość</th><th>Kąt</th><th>X</th><th>Y</th><th>Prędkość</th></tr></thead><tbody id="tg-2"></tbody></table>
+        <table><thead><tr><th>Cel</th><th>Odległość</th><th>Kąt</th><th>X</th><th>Y</th><th>Prędkość</th><th>Gdzie</th></tr></thead><tbody id="tg-2"></tbody></table>
       </div>
       <div class="card">
         <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><div class="ch-t">Łącze z radarem<small>UART, prędkość wykrywana automatycznie</small></div></div>
@@ -301,6 +371,11 @@ canvas{display:block;width:100%}
           <div class="r" style="flex-direction:column;align-items:stretch;gap:6px"><div class="n">Ostatnie bajty<small>poprawne ramki zaczynają się od AA FF 03 00</small></div><span class="v" id="rd-raw" style="text-align:left;font-family:Consolas,monospace;font-size:12px;font-weight:500;color:var(--mut);word-spacing:2px">--</span></div>
           <div class="r"><div class="n">Transmisja do panelu</div><span class="v" id="rd-tr">--</span></div>
         </div>
+        <div class="frow">
+          <button type="button" class="btn" onclick="radarCmd('restart')">Restart radaru</button>
+          <button type="button" class="btn danger" onclick="radarCmd('factory')">Ustawienia fabryczne radaru</button>
+        </div>
+        <div class="msg" id="rd-msg" hidden></div>
       </div>
     </div>
   </section>
@@ -431,7 +506,7 @@ function go(p){
   $('tb-title').textContent = PAGES[p][1];
   navOpen(false);
   if (p === 'radar') setTimeout(drawRadar, 0);
-  if (p === 'room') setTimeout(drawRoom, 0);
+  if (p === 'room' || p === 'pulpit') setTimeout(drawRoom, 0);
   if (p === 'siec' && !$('nets').children.length && st && st.wifi.mode === 'ap') scan();
   if (p === 'akt') ghVersions();
 }
@@ -501,15 +576,29 @@ function onSensors(d){
   var ring = $('pres-n');
   $('rd-warn').classList.toggle('on', !r.online);
   $('tb-rd').className = 'dot ' + (r.online ? 'ok' : 'err');
+  var p = d.pres;
   if (!r.online) {
-    ring.textContent = '–'; ring.classList.remove('on');
+    ring.textContent = '–'; ring.className = 'pres-ring';
     $('pres-t').textContent = 'Radar niedostępny'; $('pres-s').textContent = '';
+  } else if (p) {
+    // obecność liczy moduł: pokój, strefy pomijane, pamięć osoby nieruchomej
+    var cnt = r.targets.filter(function(t){ return p.ts[t.id - 1] === 1; });
+    var skip = r.targets.length - cnt.length;
+    ring.textContent = p.latch ? Math.max(p.held, 1) : p.n;
+    ring.className = 'pres-ring' + (p.latch ? ' mem' : p.occ ? ' on' : '');
+    $('pres-t').textContent = p.latch ? 'Ktoś jest – bez ruchu' : p.n ? 'W pokoju: ' + persons(p.n) : p.occ ? 'Obecność podtrzymana' : 'Pokój pusty';
+    var near = cnt.reduce(function(m, t){ var dd = Math.hypot(t.x, t.y); return m === null || dd < m ? dd : m; }, null);
+    var sub = p.latch ? 'radar nie widzi ruchu – pamięć obecności (najwyżej ' + zcfg.latch + ' min)' :
+      near !== null ? 'najbliżej ' + nf(near / 1000, 1) + ' m od radaru' :
+      p.occ ? 'zgaśnie po ' + zcfg.hold + ' s bez nikogo' : 'nikogo nie wykryto';
+    if (skip) sub += ' · pominięto: ' + skip;
+    $('pres-s').textContent = sub;
   } else {
-    ring.textContent = r.count; ring.classList.toggle('on', r.count > 0);
+    ring.textContent = r.count; ring.className = 'pres-ring' + (r.count > 0 ? ' on' : '');
     $('pres-t').textContent = r.count ? 'Wykryto ' + persons(r.count) : 'Brak obecności';
-    var near = r.targets.reduce(function(m, t){ var dd = Math.hypot(t.x, t.y); return m === null || dd < m ? dd : m; }, null);
-    $('pres-s').textContent = near !== null ? 'najbliżej ' + nf(near / 1000, 1) + ' m od radaru' : 'pokój pusty';
+    $('pres-s').textContent = r.count ? '' : 'pokój pusty';
   }
+  presZones(r.online && p);
   // klimat
   $('bme-warn').classList.toggle('on', !b.online && b.n === 0);
   $('bme-sub').textContent = b.online ? b.chip + ' · adres 0x' + b.addr.toString(16).toUpperCase() : 'czujnik niedostępny';
@@ -544,12 +633,13 @@ function onSensors(d){
   });
   Object.keys(trails).forEach(function(k){ trails[k] = trails[k].filter(function(p){ return now - p.t < 4000; }); });
   drawRadar();
+  zoneLive();
   if (!rdrag) drawRoom();
 }
 function setVal(id, v, u){ $(id).innerHTML = esc(v) + '<small>' + u + '</small>'; }
 function targetRows(r){
-  if (!r.online) return '<tr><td colspan="6" class="empty">Brak danych z radaru</td></tr>';
-  if (!r.targets.length) return '<tr><td colspan="6" class="empty">Nikogo nie wykryto</td></tr>';
+  if (!r.online) return '<tr><td colspan="7" class="empty">Brak danych z radaru</td></tr>';
+  if (!r.targets.length) return '<tr><td colspan="7" class="empty">Nikogo nie wykryto</td></tr>';
   return r.targets.map(function(t){
     var dist = Math.hypot(t.x, t.y) / 1000;
     var ang = Math.atan2(t.x, t.y) * 180 / Math.PI;
@@ -557,7 +647,27 @@ function targetRows(r){
     return '<tr><td><span class="tid"><i style="background:' + COLORS[(t.id - 1) % 3] + '"></i>' + t.id + '</span></td>' +
       '<td>' + nf(dist, 2) + ' m</td><td>' + nf(ang, 0) + '°</td>' +
       '<td>' + nf(t.x / 1000, 2) + ' m</td><td>' + nf(t.y / 1000, 2) + ' m</td>' +
-      '<td>' + (Math.abs(v) < 0.05 ? 'stoi' : nf(Math.abs(v), 1) + ' m/s ' + (v < 0 ? '↓' : '↑')) + '</td></tr>';
+      '<td>' + (Math.abs(v) < 0.05 ? 'stoi' : nf(Math.abs(v), 1) + ' m/s ' + (v < 0 ? '↓' : '↑')) + '</td>' +
+      '<td>' + esc(where(t)) + '</td></tr>';
+  }).join('');
+}
+// Gdzie jest cel według modułu: nazwy stref, "w pokoju" albo powód pominięcia
+function where(t){
+  var p = sens && sens.pres;
+  if (!p || !p.ts) return '–';
+  var st = p.ts[t.id - 1];
+  if (st !== 1) return TST[st] || '–';
+  var m = p.tz[t.id - 1], names = [];
+  zSaved.forEach(function(z, i){ if (m & (1 << i)) names.push(zname(z, i)); });
+  return names.length ? names.join(', ') : 'w pokoju';
+}
+function presZones(p){
+  var box = $('pres-z');
+  if (!p || !p.z) { box.innerHTML = ''; return; }
+  box.innerHTML = zSaved.map(function(z, i){
+    var s = p.z[i];
+    if (z.t !== 1 || !s) return '';
+    return '<span class="zchip' + (s[1] ? ' mem' : s[0] ? ' on' : '') + '"><i style="background:' + ZCOL[i % ZCOL.length] + '"></i>' + esc(zname(z, i)) + ' · ' + zStatusTxt(s) + '</span>';
   }).join('');
 }
 
@@ -668,7 +778,7 @@ function roomInputs(skip){
     .forEach(function(p){ if (p[0] !== skip) $(p[0]).value = p[1]; });
 }
 function roomState(){
-  var c = $('r-state'), d = roomDirty();
+  var c = $('r-state'), d = roomDirty() || zonesDirty();
   c.className = 'ota-chip' + (d ? ' new' : (room.set ? ' ok' : ''));
   c.textContent = d ? 'niezapisane zmiany' : (room.set ? 'zapisano w module' : 'plan jeszcze niezapisany');
   $('r-undo').disabled = !d;
@@ -695,9 +805,15 @@ function roomCenterTop(){ room.x = Math.round(room.w / 2); room.y = 0; room.rot 
 function roomUndo(){
   var s = JSON.parse(roomSaved || '{}');
   if (s.w) { room.w = s.w; room.l = s.l; room.x = s.x; room.y = s.y; room.rot = s.rot; room.flip = s.flip; }
+  if (zonesSaved) { var z = JSON.parse(zonesSaved); zcfg = z.cfg; zones = z.zones; zTag(); }
+  zsel = -1; zCap = null;
+  cfgInputs(); zoneList();
   roomChanged();
 }
-function rmsg(cls, txt){ var m = $('r-msg'); m.hidden = !txt; m.className = 'msg ' + cls; m.textContent = txt; }
+// Komunikat przy obu przyciskach zapisu (plan na górze, ustawienia na dole strony)
+function rmsg(cls, txt){
+  ['r-msg', 'z-msg'].forEach(function(id){ var m = $(id); m.hidden = !txt; m.className = 'msg ' + cls; m.textContent = txt; });
+}
 async function roomPost(body){
   var r = await fetch('/api/room', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(body) });
   var j = await r.json();
@@ -705,15 +821,26 @@ async function roomPost(body){
   return j;
 }
 async function roomSave(){
-  $('r-save').disabled = true;
+  $('r-save').disabled = $('z-save').disabled = true;
   try {
-    var j = await roomPost(roomCore());
-    room.set = true;
-    roomSaved = JSON.stringify(roomCore(j));
-    rmsg('ok', 'Plan zapisany w module.');
+    if (roomDirty() || !room.set) {
+      var j = await roomPost(roomCore());
+      room.set = true;
+      roomSaved = JSON.stringify(roomCore(j));
+    }
+    if (zonesDirty()) {
+      zones.forEach(function(z, i){ var n = znorm(z); z.x1 = n.x1; z.y1 = n.y1; z.x2 = n.x2; z.y2 = n.y2; });
+      var r = await fetch('/api/zones', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:zonesCore() });
+      var k = await r.json();
+      if (!r.ok || k.ok === false) throw new Error(k.error || 'Błąd zapisu stref');
+      zonesApply(k);
+      if (zsel >= zones.length) zsel = -1;
+      zoneList(); cfgInputs();
+    }
+    rmsg('ok', 'Zapisano w module.');
     setTimeout(function(){ rmsg('', ''); }, 3000);
   } catch(e) { rmsg('err', e.message === 'Failed to fetch' ? 'Brak połączenia z modułem.' : e.message); }
-  $('r-save').disabled = false;
+  $('r-save').disabled = $('z-save').disabled = false;
   roomState();
 }
 // Odwrócenie osi X zapisuje się od razu (razem z ostatnio zapisanym planem,
@@ -732,11 +859,163 @@ async function saveFlip(v){
   roomState();
 }
 
+// --- strefy i wykrywanie obecności ---
+// Strefy to prostokąty na planie (mm, jak plan pokoju). Obecność liczy moduł
+// (także bez otwartego panelu); panel tylko rysuje i zapisuje ustawienia.
+var ZCOL = ['#a855f7', '#06b6d4', '#ec4899', '#84cc16', '#f97316', '#14b8a6', '#eab308', '#6366f1'];
+var TST = ['', '', 'za daleko', 'poza pokojem', 'strefa pomijana'];
+var zones = [], zSaved = [], zcfg = { dist:6000, hold:30, zoff:5, latch:30, exit:400, mem:true, room:true };
+var zonesSaved = '', zsel = -1, zCap = null;
+var CFGF = [['c-dist', 'dist', 1000, 0.5, 7.5], ['c-hold', 'hold', 1, 0, 3600], ['c-zoff', 'zoff', 1, 0, 3600], ['c-latch', 'latch', 1, 1, 240], ['c-exit', 'exit', 1000, 0.1, 1.5]];
+function zonesCore(){ return JSON.stringify({ cfg:zcfg, zones:zones }); }
+function zonesDirty(){ return zonesCore() !== zonesSaved; }
+function znorm(z){
+  var a;
+  if (z.x1 > z.x2) { a = z.x1; z.x1 = z.x2; z.x2 = a; }
+  if (z.y1 > z.y2) { a = z.y1; z.y1 = z.y2; z.y2 = a; }
+  return { name:z.name || '', t:z.t, x1:z.x1, y1:z.y1, x2:z.x2, y2:z.y2 };
+}
+function zname(z, i){ return z.name || (z.t === 2 ? 'Pomijana ' : 'Strefa ') + (i + 1); }
+function zcolor(z, i){ return z.t === 2 ? cssVar('--mut') : ZCOL[i % ZCOL.length]; }
+// _s: numer strefy w module (stan na żywo przychodzi w tej kolejności);
+// niewyliczalne, więc nie trafia do zapisu ani porównania zmian
+function zTag(){ zones.forEach(function(z, i){ Object.defineProperty(z, '_s', { value:i, writable:true, configurable:true }); }); }
+function zonesApply(j){
+  zcfg = j.cfg; zones = (j.zones || []).map(znorm); zTag();
+  zSaved = JSON.parse(JSON.stringify(zones));
+  zonesSaved = zonesCore();
+}
+async function loadZones(){
+  try {
+    var j = await (await fetch('/api/zones', { cache:'no-store' })).json();
+    if (j && j.cfg) zonesApply(j); else zonesSaved = zonesCore();
+  } catch(e) { zonesSaved = zonesCore(); }
+  cfgInputs(); zoneList(); roomState(); drawRoom();
+}
+// Stan strefy z modułu [zajęta, pamięć, osób] - tylko gdy układ stref jest zapisany
+function zoneStatus(i){
+  var p = sens && sens.pres, z = zones[i];
+  if (!p || !p.z || !z || z._s === undefined || !zSaved[z._s] || zSaved[z._s].t !== z.t) return null;
+  return p.z[z._s] || null;
+}
+function zStatusTxt(s){ return s[1] ? 'pamięć' : s[0] ? (s[2] ? persons(s[2]) : 'zajęta') : 'pusto'; }
+function zoneList(){
+  var box = $('z-list');
+  if (!zones.length) box.innerHTML = '<div class="hint">Nie ma jeszcze stref. Przeciągnij palcem lub myszą po podłodze na planie albo użyj przycisków poniżej.</div>';
+  else box.innerHTML = zones.map(function(z, i){
+    return '<div class="zrow' + (i === zsel ? ' sel' : '') + '" data-i="' + i + '" onclick="zSelect(' + i + ')">' +
+      '<i class="zc" style="background:' + zcolor(z, i) + '"></i>' +
+      '<input class="input" value="' + esc(z.name) + '" placeholder="' + esc(zname({ t:z.t }, i)) + '" aria-label="Nazwa strefy" oninput="zName(' + i + ',this)" onclick="event.stopPropagation()" onfocus="zSelect(' + i + ')">' +
+      '<select class="select" aria-label="Rodzaj strefy" onchange="zType(' + i + ',+this.value)" onclick="event.stopPropagation()">' +
+        '<option value="1"' + (z.t === 1 ? ' selected' : '') + '>obecność</option><option value="2"' + (z.t === 2 ? ' selected' : '') + '>pomijaj</option></select>' +
+      '<span class="ota-chip zst" id="zs-' + i + '"></span>' +
+      '<button type="button" class="zdel" title="Usuń strefę" aria-label="Usuń strefę" onclick="event.stopPropagation();zDel(' + i + ')">×</button></div>';
+  }).join('');
+  $('z-add1').disabled = $('z-add2').disabled = zones.length >= 8;
+  zoneEdit(); zoneLive();
+}
+function zoneLive(){
+  zones.forEach(function(z, i){
+    var c = $('zs-' + i); if (!c) return;
+    var s = zoneStatus(i);
+    if (z.t === 2) { c.className = 'ota-chip zst'; c.textContent = 'pomijana'; return; }
+    if (!s) { c.className = 'ota-chip zst'; c.textContent = z._s === undefined ? 'niezapisana' : '--'; return; }
+    c.className = 'ota-chip zst' + (s[1] ? ' mem' : s[0] ? ' ok' : '');
+    c.textContent = zStatusTxt(s);
+  });
+}
+function zSelect(i){
+  if (i === zsel) return;
+  zsel = i; zCap = null; zmsg('', '');
+  document.querySelectorAll('.zrow').forEach(function(e){ e.classList.toggle('sel', +e.dataset.i === i); });
+  zoneEdit(); drawRoom();
+}
+// Nazwa: moduł mieści 23 bajty UTF-8
+function zName(i, el){
+  var v = el.value;
+  while (new TextEncoder().encode(v).length > 23) v = v.slice(0, -1);
+  if (v !== el.value) el.value = v;
+  zones[i].name = v;
+  zoneEdit(); roomState(); drawRoom();
+}
+function zType(i, t){ zones[i].t = t; zoneList(); roomState(); drawRoom(); }
+function zDel(i){ zones.splice(i, 1); zsel = -1; zCap = null; zoneList(); roomState(); drawRoom(); }
+function zAdd(t){
+  if (zones.length >= 8) return;
+  var w = Math.min(1000, room.w), l = Math.min(1000, room.l);
+  var x = Math.round((room.w - w) / 100) * 50, y = Math.round((room.l - l) / 100) * 50;
+  zones.push({ name:'', t:t, x1:x, y1:y, x2:x + w, y2:y + l });
+  zsel = zones.length - 1; zCap = null;
+  zoneList(); roomState(); drawRoom();
+}
+function zoneEdit(skip){
+  var z = zones[zsel];
+  $('z-edit').hidden = !z;
+  if (!z) return;
+  $('z-edit-t').textContent = zname(z, zsel);
+  [['z-x', z.x1], ['z-y', z.y1], ['z-w', z.x2 - z.x1], ['z-l', z.y2 - z.y1]]
+    .forEach(function(p){ if (p[0] !== skip) $(p[0]).value = m2s(p[1]); });
+}
+function zoneFromInputs(){
+  var z = zones[zsel]; if (!z) return;
+  var el = document.activeElement ? document.activeElement.id : '';
+  var ow = z.x2 - z.x1, ol = z.y2 - z.y1;
+  var x = mval('z-x'), y = mval('z-y'), w = mval('z-w'), l = mval('z-l');
+  if (x !== null && x >= 0 && x <= 20) z.x1 = Math.round(x * 1000);
+  if (y !== null && y >= 0 && y <= 20) z.y1 = Math.round(y * 1000);
+  z.x2 = Math.min(20000, z.x1 + (w !== null && w >= 0.2 ? Math.round(w * 1000) : ow));
+  z.y2 = Math.min(20000, z.y1 + (l !== null && l >= 0.2 ? Math.round(l * 1000) : ol));
+  zoneEdit(el); roomState(); drawRoom();
+}
+function zmsg(cls, txt){ var m = $('z-msg'); m.hidden = !txt; m.className = 'msg ' + cls; m.textContent = txt; }
+// Rogi strefy "z pozycji osoby": stajesz w rogu, moduł widzi Cię na planie
+function zCorner(k){
+  var z = zones[zsel]; if (!z) return;
+  var p = sens && sens.pres;
+  var vis = sens && sens.radar.online ? sens.radar.targets.filter(function(t){ return !p || p.ts[t.id - 1] === 1; }) : [];
+  if (vis.length !== 1) {
+    zmsg('err', vis.length ? 'Radar widzi ' + persons(vis.length) + ' – przy zaznaczaniu rogów w pokoju powinna być jedna osoba.' : 'Radar nikogo nie widzi w pokoju. Stań w rogu strefy i poczekaj chwilę.');
+    return;
+  }
+  var q = toRoom(vis[0].x, vis[0].y);
+  var x = Math.max(0, Math.min(room.w, Math.round(q[0] / 50) * 50)), y = Math.max(0, Math.min(room.l, Math.round(q[1] / 50) * 50));
+  if (k === 1) {
+    zCap = [x, y];
+    zmsg('ok', 'Zapamiętano róg 1 (' + m2s(x) + ' m od lewej, ' + m2s(y) + ' m od góry). Przejdź do przeciwległego rogu strefy i naciśnij „Róg 2”.');
+    return;
+  }
+  if (!zCap) { zmsg('err', 'Najpierw zaznacz róg 1.'); return; }
+  if (Math.abs(x - zCap[0]) < 300 || Math.abs(y - zCap[1]) < 300) { zmsg('err', 'Rogi są za blisko siebie (mniej niż 30 cm). Stań w przeciwległym rogu strefy.'); return; }
+  var n = znorm({ name:z.name, t:z.t, x1:zCap[0], y1:zCap[1], x2:x, y2:y });
+  if (z._s !== undefined) Object.defineProperty(n, '_s', { value:z._s, writable:true, configurable:true });
+  zones[zsel] = n; zCap = null;
+  zmsg('ok', 'Strefa ustawiona z Twojej pozycji. Zapisz zmiany w module.');
+  zoneEdit(); roomState(); drawRoom();
+}
+function cfgInputs(skip){
+  CFGF.forEach(function(f){ if (f[0] !== skip) $(f[0]).value = f[2] === 1000 ? nf(zcfg[f[1]] / 1000, f[1] === 'dist' ? 1 : 2) : String(zcfg[f[1]]); });
+  $('c-mem').checked = !!zcfg.mem; $('c-room').checked = !!zcfg.room;
+  $('c-latch').disabled = !zcfg.mem;
+}
+function cfgFromInputs(){
+  var el = document.activeElement ? document.activeElement.id : '';
+  CFGF.forEach(function(f){
+    var v = mval(f[0]);
+    if (v !== null && v >= f[3] && v <= f[4]) zcfg[f[1]] = Math.round(v * f[2]);
+  });
+  zcfg.mem = $('c-mem').checked; zcfg.room = $('c-room').checked;
+  cfgInputs(el); roomState(); drawRoom();
+}
+
+// --- rysowanie planu (Pomieszczenie: edycja, Pulpit: podgląd na żywo) ---
 function drawRoom(){
-  var cv = $('rc');
-  if (!cv || !$('p-room').classList.contains('on')) return;
+  drawPlan($('rc'), 'p-room', true);
+  drawPlan($('pc'), 'p-pulpit', false);
+}
+function drawPlan(cv, page, edit){
+  if (!cv || !$(page).classList.contains('on')) return;
   var W = cv.clientWidth, pad = 34;
-  var H = Math.round(Math.min(Math.max((W - 2 * pad) * room.l / room.w + 2 * pad, 260), 640));
+  var H = Math.round(Math.min(Math.max((W - 2 * pad) * room.l / room.w + 2 * pad, 260), edit ? 640 : 480));
   var dpr = window.devicePixelRatio || 1;
   if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) {
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.height = H + 'px';
@@ -748,42 +1027,77 @@ function drawRoom(){
   var ox = (W - room.w * s) / 2, oy = (H - room.l * s) / 2;
   function P(x, y){ return [ox + x * s, oy + y * s]; }
   var txt = cssVar('--txt'), mut = cssVar('--mut'), grid = cssVar('--grid'), acc = cssVar('--accent');
-  var rw = room.w * s, rl = room.l * s;
+  var rw = room.w * s, rl = room.l * s, F = '600 12px Segoe UI, system-ui, sans-serif';
   // podłoga i siatka co 1 m
   g.fillStyle = cssVar('--card'); g.fillRect(ox, oy, rw, rl);
   g.strokeStyle = grid; g.lineWidth = 1;
   for (var m = 1000; m < room.w; m += 1000) { g.beginPath(); g.moveTo(ox + m * s, oy); g.lineTo(ox + m * s, oy + rl); g.stroke(); }
   for (m = 1000; m < room.l; m += 1000) { g.beginPath(); g.moveTo(ox, oy + m * s); g.lineTo(ox + rw, oy + m * s); g.stroke(); }
-  // zasięg radaru przycięty do pokoju
+  // zasięg radaru (do ustawionej maks. odległości) przycięty do pokoju
+  var RG = Math.min(RANGE, zcfg.dist || RANGE);
   var R = P(room.x, room.y), d = rdirs(), phi = Math.atan2(d.f[1], d.f[0]), A = FOV * Math.PI / 180;
   g.save();
   g.beginPath(); g.rect(ox, oy, rw, rl); g.clip();
-  g.beginPath(); g.moveTo(R[0], R[1]); g.arc(R[0], R[1], RANGE * s, phi - A, phi + A); g.closePath();
+  g.beginPath(); g.moveTo(R[0], R[1]); g.arc(R[0], R[1], RG * s, phi - A, phi + A); g.closePath();
   g.fillStyle = cssVar('--sector'); g.fill();
   g.globalAlpha = 0.6; g.fill(); g.globalAlpha = 1;   // na jasnym tle podłogi wyraźniej
   g.strokeStyle = grid;
-  for (m = 1; m <= 6; m++) { g.beginPath(); g.arc(R[0], R[1], m * 1000 * s, phi - A, phi + A); g.stroke(); }
+  for (m = 1; m * 1000 <= RG; m++) { g.beginPath(); g.arc(R[0], R[1], m * 1000 * s, phi - A, phi + A); g.stroke(); }
   g.strokeStyle = acc; g.globalAlpha = 0.45; g.setLineDash([5, 5]);
-  [-A, A].forEach(function(a){ g.beginPath(); g.moveTo(R[0], R[1]); g.lineTo(R[0] + Math.cos(phi + a) * RANGE * s, R[1] + Math.sin(phi + a) * RANGE * s); g.stroke(); });
+  [-A, A].forEach(function(a){ g.beginPath(); g.moveTo(R[0], R[1]); g.lineTo(R[0] + Math.cos(phi + a) * RG * s, R[1] + Math.sin(phi + a) * RG * s); g.stroke(); });
   g.setLineDash([]); g.globalAlpha = 1;
+  // strefy
+  zones.forEach(function(z, i){
+    var a = P(z.x1, z.y1), b = P(z.x2, z.y2), w = b[0] - a[0], h = b[1] - a[1], col = zcolor(z, i), st = zoneStatus(i);
+    g.save();
+    g.beginPath(); g.rect(a[0], a[1], w, h); g.clip();
+    if (z.t === 2) {
+      g.fillStyle = col; g.globalAlpha = 0.07; g.fillRect(a[0], a[1], w, h);
+      g.strokeStyle = col; g.globalAlpha = 0.35; g.lineWidth = 1;
+      for (var k = -h; k < w; k += 9) { g.beginPath(); g.moveTo(a[0] + k, a[1] + h); g.lineTo(a[0] + k + h, a[1]); g.stroke(); }
+    } else {
+      g.fillStyle = col; g.globalAlpha = st && st[0] ? (st[1] ? 0.2 : 0.3) : 0.1; g.fillRect(a[0], a[1], w, h);
+    }
+    g.restore();
+    g.strokeStyle = col; g.lineWidth = edit && i === zsel ? 2.5 : 1.5;
+    if (st && st[1]) g.setLineDash([6, 4]);
+    g.strokeRect(a[0], a[1], w, h); g.setLineDash([]);
+    g.save(); g.beginPath(); g.rect(a[0], a[1], w, h); g.clip();
+    g.fillStyle = col; g.font = F; g.textAlign = 'left';
+    g.fillText(zname(z, i), a[0] + 6, a[1] + 16);
+    if (st && z.t === 1) { g.font = '11px Segoe UI, system-ui, sans-serif'; g.fillStyle = st[0] ? txt : mut; g.fillText(zStatusTxt(st), a[0] + 6, a[1] + 30); }
+    g.restore();
+  });
   g.restore();
   // ściany i wymiary
   g.strokeStyle = txt; g.lineWidth = 3; g.globalAlpha = 0.85;
   g.strokeRect(ox, oy, rw, rl);
   g.globalAlpha = 1;
-  g.fillStyle = mut; g.font = '600 12px Segoe UI, system-ui, sans-serif'; g.textAlign = 'center';
+  g.fillStyle = mut; g.font = F; g.textAlign = 'center';
   // wymiary pod planem i po prawej - górna i lewa ściana to typowe miejsca radaru
   g.fillText(nf(room.w / 1000, 2) + ' m', ox + rw / 2, oy + rl + 20);
   g.save(); g.translate(ox + rw + 16, oy + rl / 2); g.rotate(Math.PI / 2); g.fillText(nf(room.l / 1000, 2) + ' m', 0, 0); g.restore();
-  // ślady i osoby (poza pokojem przygaszone - odbicia albo sąsiedni pokój)
-  function inRoom(p){ return p[0] >= 0 && p[0] <= room.w && p[1] >= 0 && p[1] <= room.l; }
+  // uchwyty zaznaczonej strefy
+  var zs = edit && zones[zsel];
+  if (zs) {
+    var col = zcolor(zs, zsel);
+    zcorners(zs).forEach(function(c){
+      var q = P(c[0], c[1]);
+      g.fillStyle = cssVar('--card'); g.strokeStyle = col; g.lineWidth = 2;
+      g.beginPath(); g.rect(q[0] - 6, q[1] - 6, 12, 12); g.fill(); g.stroke();
+    });
+  }
+  // ślady i osoby (pominięte przez moduł - przygaszone)
+  var pres = sens && sens.pres;
+  function counted(id, q){ return pres && pres.ts ? pres.ts[id - 1] === 1 : (q[0] >= 0 && q[0] <= room.w && q[1] >= 0 && q[1] <= room.l); }
   if (opt.trail) {
     Object.keys(trails).forEach(function(k){
       var a = trails[k]; if (a.length < 2) return;
       g.strokeStyle = COLORS[(k - 1) % 3]; g.lineWidth = 2; g.lineCap = 'round';
+      var on = counted(+k, toRoom(a[a.length - 1].x, a[a.length - 1].y));
       for (var i = 1; i < a.length; i++) {
         var p0 = toRoom(a[i - 1].x, a[i - 1].y), p1 = toRoom(a[i].x, a[i].y);
-        g.globalAlpha = i / a.length * 0.5 * (inRoom(p1) ? 1 : 0.4);
+        g.globalAlpha = i / a.length * 0.5 * (on ? 1 : 0.4);
         var s0 = P(p0[0], p0[1]), s1 = P(p1[0], p1[1]);
         g.beginPath(); g.moveTo(s0[0], s0[1]); g.lineTo(s1[0], s1[1]); g.stroke();
       }
@@ -792,49 +1106,81 @@ function drawRoom(){
   }
   if (sens && sens.radar.online) {
     sens.radar.targets.forEach(function(t){
-      var q = toRoom(t.x, t.y), p = P(q[0], q[1]), c = COLORS[(t.id - 1) % 3], inside = inRoom(q);
-      g.globalAlpha = inside ? 0.18 : 0.08; g.fillStyle = c;
+      var q = toRoom(t.x, t.y), p = P(q[0], q[1]), c = COLORS[(t.id - 1) % 3], on = counted(t.id, q);
+      g.globalAlpha = on ? 0.18 : 0.08; g.fillStyle = c;
       g.beginPath(); g.arc(p[0], p[1], 18, 0, Math.PI * 2); g.fill();
-      g.globalAlpha = inside ? 1 : 0.4;
+      g.globalAlpha = on ? 1 : 0.4;
       g.beginPath(); g.arc(p[0], p[1], 7, 0, Math.PI * 2); g.fill();
-      g.fillStyle = txt; g.font = '600 12px Segoe UI, system-ui, sans-serif'; g.textAlign = 'center';
-      g.fillText(String(t.id), p[0], p[1] - 24);
+      g.fillStyle = txt; g.font = F; g.textAlign = 'center';
+      var why = pres && pres.ts && !on ? TST[pres.ts[t.id - 1]] : '';
+      g.fillText(String(t.id) + (why ? ' · ' + why : ''), p[0], p[1] - 24);
       g.globalAlpha = 1;
     });
   }
-  // radar i uchwyt obrotu
+  // radar i uchwyt obrotu (uchwyt tylko w edycji)
   var Hd = [R[0] + d.f[0] * 48, R[1] + d.f[1] * 48];
-  g.strokeStyle = acc; g.lineWidth = 2;
-  g.beginPath(); g.moveTo(R[0], R[1]); g.lineTo(Hd[0], Hd[1]); g.stroke();
-  g.fillStyle = cssVar('--card'); g.beginPath(); g.arc(Hd[0], Hd[1], 8, 0, Math.PI * 2); g.fill(); g.stroke();
+  if (edit) {
+    g.strokeStyle = acc; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(R[0], R[1]); g.lineTo(Hd[0], Hd[1]); g.stroke();
+    g.fillStyle = cssVar('--card'); g.beginPath(); g.arc(Hd[0], Hd[1], 8, 0, Math.PI * 2); g.fill(); g.stroke();
+  }
   g.save(); g.translate(R[0], R[1]); g.rotate(phi - Math.PI / 2);
   g.fillStyle = acc;
   g.beginPath(); g.roundRect ? g.roundRect(-15, -6, 30, 12, 4) : g.rect(-15, -6, 30, 12); g.fill();
   g.fillStyle = '#fff'; g.beginPath(); g.arc(0, 2, 2.5, 0, Math.PI * 2); g.fill();
   g.restore();
-  rv = { s:s, ox:ox, oy:oy, R:R, H:Hd };
+  if (edit) rv = { s:s, ox:ox, oy:oy, R:R, H:Hd };
 }
+// Rogi: 0 lewy górny, 1 prawy górny, 2 prawy dolny, 3 lewy dolny
+function zcorners(z){ return [[z.x1, z.y1], [z.x2, z.y1], [z.x2, z.y2], [z.x1, z.y2]]; }
 (function(){
-  var cv = $('rc');
+  var cv = $('rc'), ZMIN = 200;
   function pt(e){ var b = cv.getBoundingClientRect(); return [e.clientX - b.left, e.clientY - b.top]; }
   function near(a, b, r){ return Math.hypot(a[0] - b[0], a[1] - b[1]) <= r; }
+  function mm(p){ return [(p[0] - rv.ox) / rv.s, (p[1] - rv.oy) / rv.s]; }
+  function px(x, y){ return [rv.ox + x * rv.s, rv.oy + y * rv.s]; }
+  function snap(v){ return Math.round(v / 50) * 50; }
+  function cl(v, a, b){ return Math.max(a, Math.min(b, v)); }
+  function cornerAt(p){
+    var z = zones[zsel]; if (!z) return -1;
+    var c = zcorners(z);
+    for (var i = 0; i < 4; i++) if (near(p, px(c[i][0], c[i][1]), 14)) return i;
+    return -1;
+  }
+  function zoneAt(x, y){
+    var inz = function(z){ return x >= z.x1 && x <= z.x2 && y >= z.y1 && y <= z.y2; };
+    if (zones[zsel] && inz(zones[zsel])) return zsel;
+    for (var i = zones.length - 1; i >= 0; i--) if (inz(zones[i])) return i;
+    return -1;
+  }
+  function hit(p){
+    if (near(p, rv.H, 18)) return { k:'rot' };
+    if (near(p, rv.R, 24)) return { k:'move' };
+    var c = cornerAt(p); if (c >= 0) return { k:'zc', c:c };
+    var q = mm(p), z = zoneAt(q[0], q[1]);
+    if (z >= 0) return { k:'zm', i:z, dx:q[0] - zones[z].x1, dy:q[1] - zones[z].y1 };
+    if (q[0] >= 0 && q[0] <= room.w && q[1] >= 0 && q[1] <= room.l) return { k:'zd', x0:snap(q[0]), y0:snap(q[1]), p0:p, i:-1 };
+    return { k:'none' };
+  }
+  var CUR = { rot:'grab', move:'grab', zc:'nwse-resize', zm:'move', zd:'crosshair', none:'default' };
   cv.addEventListener('pointerdown', function(e){
     if (!rv) return;
-    var p = pt(e);
-    rdrag = near(p, rv.H, 18) ? 'rot' : (near(p, rv.R, 24) ? 'move' : null);
-    if (!rdrag) return;
+    var h = hit(pt(e));
+    if (h.k === 'zm') zSelect(h.i);
+    if (h.k === 'none') { zSelect(-1); return; }
+    rdrag = h;
     try { cv.setPointerCapture(e.pointerId); } catch(err){}
     e.preventDefault();
   });
   cv.addEventListener('pointermove', function(e){
     if (!rv) return;
     var p = pt(e);
-    if (!rdrag) { cv.style.cursor = near(p, rv.H, 18) || near(p, rv.R, 24) ? 'grab' : 'default'; return; }
-    cv.style.cursor = 'grabbing';
-    var x = (p[0] - rv.ox) / rv.s, y = (p[1] - rv.oy) / rv.s;
-    if (rdrag === 'rot') {
+    if (!rdrag) { cv.style.cursor = CUR[hit(p).k]; return; }
+    if (rdrag.k === 'rot' || rdrag.k === 'move') cv.style.cursor = 'grabbing';
+    var q = mm(p), x = q[0], y = q[1], z;
+    if (rdrag.k === 'rot') {
       room.rot = normRot(Math.round(Math.atan2(-(x - room.x), y - room.y) * 180 / Math.PI / 5) * 5);
-    } else {
+    } else if (rdrag.k === 'move') {
       room.x = Math.round(x / 10) * 10; room.y = Math.round(y / 10) * 10;
       clampRadar();
       // przy ścianie: przyciągnij i skieruj w głąb pokoju (w narożniku - na środek)
@@ -842,10 +1188,45 @@ function drawRoom(){
       if (L) room.x = 0; if (Rr) room.x = room.w; if (T) room.y = 0; if (B) room.y = room.l;
       if ((L || Rr) && (T || B)) room.rot = normRot(Math.atan2(-(room.w / 2 - room.x), room.l / 2 - room.y) * 180 / Math.PI);
       else if (T) room.rot = 0; else if (B) room.rot = 180; else if (L) room.rot = -90; else if (Rr) room.rot = 90;
+    } else if (rdrag.k === 'zm') {
+      z = zones[rdrag.i];
+      var w = z.x2 - z.x1, l = z.y2 - z.y1;
+      z.x1 = cl(snap(x - rdrag.dx), 0, Math.max(0, room.w - w)); z.x2 = z.x1 + w;
+      z.y1 = cl(snap(y - rdrag.dy), 0, Math.max(0, room.l - l)); z.y2 = z.y1 + l;
+    } else if (rdrag.k === 'zc') {
+      z = zones[zsel];
+      x = cl(snap(x), 0, room.w); y = cl(snap(y), 0, room.l);
+      var c = rdrag.c;
+      if (c === 0 || c === 3) z.x1 = Math.min(x, z.x2 - ZMIN); else z.x2 = Math.max(x, z.x1 + ZMIN);
+      if (c === 0 || c === 1) z.y1 = Math.min(y, z.y2 - ZMIN); else z.y2 = Math.max(y, z.y1 + ZMIN);
+    } else if (rdrag.k === 'zd') {
+      if (rdrag.i < 0) {
+        if (!near(p, rdrag.p0, 10)) {
+          if (zones.length >= 8) { zmsg('err', 'Można dodać najwyżej 8 stref.'); rdrag = null; return; }
+          zones.push({ name:'', t:1, x1:rdrag.x0, y1:rdrag.y0, x2:rdrag.x0, y2:rdrag.y0 });
+          rdrag.i = zones.length - 1;
+          zsel = rdrag.i; zoneList();
+        } else return;
+      }
+      z = zones[rdrag.i];
+      x = cl(snap(x), 0, room.w); y = cl(snap(y), 0, room.l);
+      z.x1 = Math.min(rdrag.x0, x); z.x2 = Math.max(rdrag.x0, x);
+      z.y1 = Math.min(rdrag.y0, y); z.y2 = Math.max(rdrag.y0, y);
+      zoneEdit();
     }
-    roomInputs(); roomState(); drawRoom();
+    if (rdrag.k === 'rot' || rdrag.k === 'move') roomInputs(); else zoneEdit();
+    roomState(); drawRoom();
   });
-  function end(){ rdrag = null; cv.style.cursor = 'default'; }
+  function end(){
+    var d = rdrag;
+    rdrag = null; cv.style.cursor = 'default';
+    if (d && d.k === 'zd') {
+      if (d.i < 0) { zSelect(-1); return; }
+      var z = zones[d.i];
+      if (z.x2 - z.x1 < ZMIN || z.y2 - z.y1 < ZMIN) { zones.splice(d.i, 1); zsel = -1; zmsg('err', 'Strefa za mała – przeciągnij co najmniej 20 × 20 cm.'); }
+      zoneList(); roomState(); drawRoom();
+    }
+  }
   cv.addEventListener('pointerup', end);
   cv.addEventListener('pointercancel', end);
 })();
@@ -1092,6 +1473,19 @@ function otaUpload(inp){
 }
 
 // --- serwis ---
+async function radarCmd(a){
+  var f = a === 'factory';
+  if (!confirm(f ? 'Przywrócić ustawienia fabryczne radaru? Skasuje to ustawienia zapisane w samym radarze (np. z aplikacji HLKRadarTool). Plan pokoju i strefy SIH Radar zostają.' : 'Uruchomić radar ponownie? Przez kilka sekund nie będzie danych.')) return;
+  var m = $('rd-msg'); m.hidden = false; m.className = 'msg';
+  m.innerHTML = '<span class="spin"></span>' + (f ? 'Przywracam ustawienia fabryczne radaru…' : 'Restart radaru…');
+  try {
+    var r = await fetch('/api/radar', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ action:a }) });
+    var j = await r.json();
+    if (!r.ok || j.ok === false) throw new Error(j.error || 'Błąd');
+    setTimeout(function(){ m.className = 'msg ok'; m.textContent = f ? 'Radar ma ustawienia fabryczne i uruchomił się ponownie.' : 'Radar uruchomił się ponownie.'; }, 4000);
+    setTimeout(function(){ m.hidden = true; }, 12000);
+  } catch(e) { m.className = 'msg err'; m.textContent = 'Nie udało się: ' + e.message; }
+}
 async function reboot(){
   if (!confirm('Uruchomić moduł ponownie?')) return;
   var m = $('smsg'); m.hidden = false; m.className = 'msg';
@@ -1107,6 +1501,7 @@ async function reboot(){
   try { var o = JSON.parse(lsGet('sih_radar_opt') || '{}'); if (typeof o.trail === 'boolean') opt.trail = o.trail; } catch(e){}
   $('o-trail').checked = $('r-trail').checked = opt.trail;
   loadRoom();
+  loadZones();
   var first = location.hash.slice(1);
   go(first || 'pulpit');
   loadStatus().then(function(){

@@ -22,3 +22,10 @@ typedef struct {
 // UART + zadanie odbioru. Radar pracuje na 256000 bd.
 void ld2450_init(int uart_num, int pin_tx, int pin_rx);
 void ld2450_get(ld2450_data_t *out);
+
+// Serwis radaru z panelu - wykonywane przez zadanie odbioru (ono trzyma UART)
+typedef enum {
+    LD2450_REQ_RESTART = 1,     // restart radaru
+    LD2450_REQ_FACTORY = 2,     // ustawienia fabryczne + restart
+} ld2450_req_t;
+void ld2450_request(ld2450_req_t req);

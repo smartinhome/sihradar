@@ -30,6 +30,7 @@ static ld2450_parser_t  s_parser;
 static int              s_bi = 0;              // indeks w BAUDS
 static int64_t          s_baud_since_us = 0;
 static int              s_frames_at_baud = 0;
+static volatile int     s_req = 0;             // ld2450_req_t z panelu
 
 static void send_cmd(uint16_t cmd, const uint8_t *val, uint16_t vlen) {
     uint8_t b[24];
@@ -79,6 +80,21 @@ static void restore_default_baud(void) {
     uart_wait_tx_done(s_uart, pdMS_TO_TICKS(100));
     vTaskDelay(pdMS_TO_TICKS(1500));
     set_baud(0);
+}
+
+// Restart (i ewentualnie ustawienia fabryczne) na zyczenie z panelu.
+// Po ustawieniach fabrycznych radar nadaje z predkoscia 256000.
+static void service(int req) {
+    ESP_LOGW(TAG, "%s radaru z panelu", req == LD2450_REQ_FACTORY ? "Ustawienia fabryczne" : "Restart");
+    config_on();
+    if (req == LD2450_REQ_FACTORY) {
+        send_cmd(LD2450_CMD_FACTORY, NULL, 0);
+        vTaskDelay(pdMS_TO_TICKS(150));
+    }
+    send_cmd(LD2450_CMD_RESTART, NULL, 0);
+    uart_wait_tx_done(s_uart, pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(1500));
+    set_baud(req == LD2450_REQ_FACTORY ? 0 : s_bi);
 }
 
 static void handle_data(const uint8_t *frame) {
@@ -147,6 +163,18 @@ static void rx_task(void *arg) {
             memcpy(s_data.raw, raw, raw_len);
             s_data.raw_len = (uint8_t)raw_len;
             portEXIT_CRITICAL(&s_mux);
+        }
+
+        if (s_req) {
+            int req = s_req;
+            s_req = 0;
+            service(req);
+            was_online = false;
+            fw_tries = 0;
+            portENTER_CRITICAL(&s_mux);
+            s_data.fw[0] = 0;          // wersje odczytamy po powrocie radaru
+            portEXIT_CRITICAL(&s_mux);
+            continue;
         }
 
         int64_t now = esp_timer_get_time();
@@ -234,4 +262,8 @@ void ld2450_get(ld2450_data_t *out) {
         out->count = 0;
         for (int i = 0; i < LD2450_MAX_TARGETS; i++) out->t[i].valid = false;
     }
+}
+
+void ld2450_request(ld2450_req_t req) {
+    s_req = (int)req;
 }

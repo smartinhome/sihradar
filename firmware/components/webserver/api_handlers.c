@@ -5,6 +5,7 @@
 #include "bme688.h"
 #include "ota_manager.h"
 #include "room.h"
+#include "presence.h"
 #include "esp_ota_ops.h"
 #include "esp_app_desc.h"
 #include "esp_system.h"
@@ -24,7 +25,7 @@ static httpd_handle_t s_srv = NULL;
 static temperature_sensor_handle_t s_tsens = NULL;
 
 #define WS_PERIOD_MS 100      // radar daje ok. 10 ramek na sekunde
-#define JSON_CAP     1024
+#define JSON_CAP     1536
 
 // --------------------------------------------------------------------------
 // Pomocnicze
@@ -55,21 +56,27 @@ static esp_err_t send_err(httpd_req_t *req, const char *status, const char *msg)
     return send_json(req, buf);
 }
 
-// Cialo zapytania POST jako JSON (maly limit - to tylko formularze panelu)
+// Cialo zapytania POST jako JSON (maly limit - to tylko formularze panelu;
+// najwiekszy jest zapis stref)
+#define BODY_MAX 2048
 static cJSON *read_json(httpd_req_t *req) {
-    if (req->content_len <= 0 || req->content_len > 512) return NULL;
-    char buf[513];
+    if (req->content_len <= 0 || req->content_len > BODY_MAX) return NULL;
+    char *buf = malloc(req->content_len + 1);
+    if (!buf) return NULL;
     int got = 0;
     while (got < (int)req->content_len) {
         int r = httpd_req_recv(req, buf + got, req->content_len - got);
         if (r <= 0) {
             if (r == HTTPD_SOCK_ERR_TIMEOUT) continue;
+            free(buf);
             return NULL;
         }
         got += r;
     }
     buf[got] = 0;
-    return cJSON_Parse(buf);
+    cJSON *j = cJSON_Parse(buf);
+    free(buf);
+    return j;
 }
 
 static float chip_temp(void) {
@@ -107,10 +114,12 @@ static int sensors_json(char *buf, int cap) {
     if (n < cap) {
         n += snprintf(buf + n, cap - n,
             "]},\"bme\":{\"online\":%s,\"chip\":\"%s\",\"addr\":%u,\"t\":%.2f,\"h\":%.1f,"
-            "\"p\":%.1f,\"gas\":%.1f,\"gas_ok\":%s,\"n\":%lu}}",
+            "\"p\":%.1f,\"gas\":%.1f,\"gas_ok\":%s,\"n\":%lu},\"pres\":",
             b.online ? "true" : "false", b.chip, b.addr, b.temp_c, b.hum_pct, b.press_hpa,
             b.gas_kohm, b.gas_valid ? "true" : "false", (unsigned long)b.samples);
     }
+    if (n < cap) n += presence_json(buf + n, cap - n);
+    if (n < cap) n += snprintf(buf + n, cap - n, "}");
     return n < cap ? n : cap - 1;
 }
 
@@ -225,6 +234,100 @@ static esp_err_t h_room_set(httpd_req_t *req) {
     const char *err = room_save(&r);
     if (err) return send_err(req, "400 Bad Request", err);
     return h_room_get(req);
+}
+
+// --------------------------------------------------------------------------
+// Strefy i ustawienia wykrywania obecnosci
+// --------------------------------------------------------------------------
+
+#define ZONES_CAP 1400
+
+static esp_err_t h_zones_get(httpd_req_t *req) {
+    char *buf = malloc(ZONES_CAP);
+    if (!buf) return send_err(req, "500 Internal Server Error", "Brak pamięci");
+    presence_zones_json(buf, ZONES_CAP);
+    esp_err_t r = send_json(req, buf);
+    free(buf);
+    return r;
+}
+
+static bool num(const cJSON *o, const char *k, double lo, double hi, double *out) {
+    const cJSON *it = cJSON_GetObjectItem(o, k);
+    if (!cJSON_IsNumber(it) || it->valuedouble < lo || it->valuedouble > hi) return false;
+    *out = it->valuedouble;
+    return true;
+}
+
+// Kopiuje nazwe strefy, ucinajac na granicy znaku UTF-8
+static void copy_name(char *dst, const char *src) {
+    strlcpy(dst, src, PZ_NAME_LEN);
+    size_t L = strlen(dst);
+    size_t k = L;
+    while (k && ((unsigned char)dst[k - 1] & 0xC0) == 0x80) k--;   // bajty kontynuacji
+    if (k && ((unsigned char)dst[k - 1] & 0x80)) {
+        unsigned char lead = (unsigned char)dst[k - 1];
+        size_t need = lead >= 0xF0 ? 4 : lead >= 0xE0 ? 3 : 2;
+        if (L - (k - 1) < need) dst[k - 1] = 0;   // znak uciety w polowie
+    }
+}
+
+// {"cfg":{"dist":6000,"hold":30,"zoff":5,"latch":30,"exit":400,"mem":true,"room":true},
+//  "zones":[{"name":"Kanapa","t":1,"x1":0,"y1":0,"x2":1000,"y2":800}]}  (t: 1 obecnosc, 2 pomijaj)
+static esp_err_t h_zones_set(httpd_req_t *req) {
+    cJSON *j = read_json(req);
+    if (!j) return send_err(req, "400 Bad Request", "Nieprawidłowe dane");
+    const char *err = NULL;
+    pz_cfg_t c = presence_get_cfg();
+    const cJSON *jc = cJSON_GetObjectItem(j, "cfg");
+    if (cJSON_IsObject(jc)) {
+        double v;
+        if (num(jc, "dist", 0, 65535, &v))  c.max_dist_mm = (uint16_t)v;
+        if (num(jc, "hold", 0, 65535, &v))  c.hold_s = (uint16_t)v;
+        if (num(jc, "zoff", 0, 65535, &v))  c.zone_off_s = (uint16_t)v;
+        if (num(jc, "latch", 0, 65535, &v)) c.latch_min = (uint16_t)v;
+        if (num(jc, "exit", 0, 65535, &v))  c.exit_mm = (uint16_t)v;
+        const cJSON *b = cJSON_GetObjectItem(jc, "mem");
+        if (cJSON_IsBool(b)) c.memory = cJSON_IsTrue(b);
+        b = cJSON_GetObjectItem(jc, "room");
+        if (cJSON_IsBool(b)) c.room_only = cJSON_IsTrue(b);
+    }
+    static pz_zone_t zs[PZ_MAX_ZONES];     // serwer HTTP obsluguje jedno zapytanie naraz
+    memset(zs, 0, sizeof(zs));
+    int n = 0;
+    const cJSON *ja = cJSON_GetObjectItem(j, "zones");
+    if (cJSON_IsArray(ja)) {
+        const cJSON *z;
+        cJSON_ArrayForEach(z, ja) {
+            if (n >= PZ_MAX_ZONES) { err = "Najwyżej 8 stref."; break; }
+            double x1, y1, x2, y2, t;
+            if (!num(z, "x1", -32768, 32767, &x1) || !num(z, "y1", -32768, 32767, &y1) ||
+                !num(z, "x2", -32768, 32767, &x2) || !num(z, "y2", -32768, 32767, &y2) ||
+                !num(z, "t", 0, 255, &t)) { err = "Niepełne dane strefy."; break; }
+            zs[n] = (pz_zone_t){ .x1 = (int16_t)x1, .y1 = (int16_t)y1, .x2 = (int16_t)x2,
+                                 .y2 = (int16_t)y2, .type = (uint8_t)t };
+            const cJSON *nm = cJSON_GetObjectItem(z, "name");
+            if (cJSON_IsString(nm)) copy_name(zs[n].name, nm->valuestring);
+            n++;
+        }
+    }
+    cJSON_Delete(j);
+    if (!err) err = presence_save(&c, zs, n);
+    if (err) return send_err(req, "400 Bad Request", err);
+    return h_zones_get(req);
+}
+
+// {"action":"restart"|"factory"} - serwis radaru
+static esp_err_t h_radar(httpd_req_t *req) {
+    cJSON *j = read_json(req);
+    if (!j) return send_err(req, "400 Bad Request", "Nieprawidłowe dane");
+    const cJSON *a = cJSON_GetObjectItem(j, "action");
+    int rq = 0;
+    if (cJSON_IsString(a) && strcmp(a->valuestring, "restart") == 0) rq = LD2450_REQ_RESTART;
+    if (cJSON_IsString(a) && strcmp(a->valuestring, "factory") == 0) rq = LD2450_REQ_FACTORY;
+    cJSON_Delete(j);
+    if (!rq) return send_err(req, "400 Bad Request", "Nieznane polecenie");
+    ld2450_request((ld2450_req_t)rq);
+    return send_json(req, "{\"ok\":true}");
 }
 
 // --------------------------------------------------------------------------
@@ -480,6 +583,9 @@ void api_register_handlers(httpd_handle_t server) {
         { .uri = "/api/reboot",       .method = HTTP_POST, .handler = h_reboot },
         { .uri = "/api/room",         .method = HTTP_GET,  .handler = h_room_get },
         { .uri = "/api/room",         .method = HTTP_POST, .handler = h_room_set },
+        { .uri = "/api/zones",        .method = HTTP_GET,  .handler = h_zones_get },
+        { .uri = "/api/zones",        .method = HTTP_POST, .handler = h_zones_set },
+        { .uri = "/api/radar",        .method = HTTP_POST, .handler = h_radar },
         { .uri = "/api/ota/github",   .method = HTTP_POST, .handler = h_ota_github },
         { .uri = "/api/ota/url",      .method = HTTP_POST, .handler = h_ota_url },
         { .uri = "/api/ota/upload",   .method = HTTP_POST, .handler = h_ota_upload },

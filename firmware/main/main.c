@@ -7,6 +7,7 @@
 #include "bme688.h"
 #include "ota_manager.h"
 #include "room.h"
+#include "presence.h"
 
 #include "nvs_flash.h"
 #include "esp_log.h"
@@ -76,6 +77,7 @@ void app_main(void) {
     // a pomiary maja byc gotowe, zanim ktos otworzy panel.
     ld2450_init(LD2450_UART_NUM, LD2450_PIN_TX, LD2450_PIN_RX);
     bme688_init(BME688_PIN_SDA, BME688_PIN_SCL);
+    presence_init();
 
     wifi_manager_init();
     webserver_init();
