@@ -7,6 +7,9 @@ firmware/sdkconfig.old
 firmware/dependencies.lock
 firmware/version.txt
 
+# Pliki wydania skladane w GitHub Actions
+dist/
+
 # Testy na komputerze
 tools/*.exe
 tools/test_host

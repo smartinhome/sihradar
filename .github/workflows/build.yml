@@ -41,25 +41,27 @@ jobs:
           path: firmware
 
       - name: Pelny obraz do pierwszego wgrania (adres 0x0)
+        # firmware/build tworzy kontener ESP-IDF jako root - tu nie da sie w nim
+        # zapisywac, wiec wszystkie pliki do wydania trafiaja do dist/.
+        # esptool przypiety do 4.x: wersja 5 zmienila nazwy opcji.
         run: |
-          pip install -q esptool
-          cd firmware/build
-          python -m esptool --chip esp32c6 merge_bin -o sih-radar-full.bin \
+          pip install -q "esptool>=4.7,<5"
+          mkdir -p dist
+          B=firmware/build
+          python -m esptool --chip esp32c6 merge_bin -o dist/sih-radar-full.bin \
             --flash_mode dio --flash_freq 80m --flash_size 4MB \
-            0x0 bootloader/bootloader.bin \
-            0x8000 partition_table/partition-table.bin \
-            0xf000 ota_data_initial.bin \
-            0x20000 sih-radar.bin
+            0x0 $B/bootloader/bootloader.bin \
+            0x8000 $B/partition_table/partition-table.bin \
+            0xf000 $B/ota_data_initial.bin \
+            0x20000 $B/sih-radar.bin
+          cp $B/sih-radar.bin $B/bootloader/bootloader.bin $B/partition_table/partition-table.bin dist/
+          ls -la dist
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: firmware-${{ github.ref_name }}
-          path: |
-            firmware/build/sih-radar.bin
-            firmware/build/sih-radar-full.bin
-            firmware/build/bootloader/bootloader.bin
-            firmware/build/partition_table/partition-table.bin
+          path: dist/*.bin
           if-no-files-found: error
           retention-days: 30
 
