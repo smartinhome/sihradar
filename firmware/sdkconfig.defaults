@@ -1,0 +1,27 @@
+# ESP32-C6 (Waveshare ESP32-C6-Zero)
+CONFIG_IDF_TARGET="esp32c6"
+
+# Flash 4 MB - modul ma 4 MB (C6FH4) albo 8 MB (C6FH8), uklad pasuje do obu
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+# HTTPD + WebSocket (podglad radaru na zywo)
+CONFIG_HTTPD_MAX_REQ_HDR_LEN=1024
+CONFIG_HTTPD_MAX_URI_LEN=512
+CONFIG_HTTPD_WS_SUPPORT=y
+
+# Gniazda: serwer HTTP (7) + DNS portalu + mDNS + zapas
+CONFIG_LWIP_MAX_SOCKETS=16
+
+# Stos tasku main
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=6144
+
+# Log
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
+
+# Kod krotszy i szybszy niz -Og; asercje zostaja
+CONFIG_COMPILER_OPTIMIZATION_SIZE=y
+
+# Nieuzywane: WPA2-Enterprise
+CONFIG_ESP_WIFI_ENTERPRISE_SUPPORT=n

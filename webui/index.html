@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SIH Radar</title>
+<link rel="icon" href="data:,">
+<script>try{var t=localStorage.getItem('sih_theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+:root{--bg:#0b0b0d;--card:#18181b;--tile:#232326;--track:#27272a;--bd:transparent;--txt:#fcfcfc;--mut:#a1a1aa;--chip:#27272a;--chiptxt:#e4e4e7;--accent:#3d8bff;--ok:#17c964;--oktxt:#81dc98;--oksoft:rgba(23,201,100,.15);--warn:#f0b429;--err:#ff383c;--errtxt:#ff7d74;--errsoft:rgba(255,56,60,.14);--logo-body:#fff;--grid:rgba(255,255,255,.08);--sector:rgba(61,139,255,.07);--sh:0 20px 50px rgba(0,0,0,.5)}
+@media (prefers-color-scheme:light){:root:not([data-theme=dark]){--bg:#f4f4f5;--card:#fff;--tile:#f4f4f5;--track:#e4e4e7;--bd:#e4e4e7;--txt:#18181b;--mut:#71717a;--chip:#f4f4f5;--chiptxt:#3f3f46;--accent:#2563eb;--oktxt:#15803d;--oksoft:rgba(23,201,100,.14);--err:#e5252a;--errtxt:#c81e1e;--errsoft:rgba(229,37,42,.1);--logo-body:#18181b;--grid:rgba(0,0,0,.09);--sector:rgba(37,99,235,.06);--sh:0 20px 50px rgba(0,0,0,.15)}}
+:root[data-theme=light]{--bg:#f4f4f5;--card:#fff;--tile:#f4f4f5;--track:#e4e4e7;--bd:#e4e4e7;--txt:#18181b;--mut:#71717a;--chip:#f4f4f5;--chiptxt:#3f3f46;--accent:#2563eb;--oktxt:#15803d;--oksoft:rgba(23,201,100,.14);--err:#e5252a;--errtxt:#c81e1e;--errsoft:rgba(229,37,42,.1);--logo-body:#18181b;--grid:rgba(0,0,0,.09);--sector:rgba(37,99,235,.06);--sh:0 20px 50px rgba(0,0,0,.15)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg)}
+body{color:var(--txt);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;font-size:14px;min-height:100vh;-webkit-text-size-adjust:100%}
+button,input{font:inherit;color:inherit}
+svg{flex-shrink:0}
+/* --- menu boczne --- */
+.sidebar{position:fixed;top:12px;bottom:12px;left:12px;width:244px;background:var(--card);border:1px solid var(--bd);border-radius:24px;padding:16px 12px;display:flex;flex-direction:column;z-index:50;transition:transform .25s}
+.brand{display:flex;align-items:center;gap:12px;padding:4px 0 16px 8px}
+.brand-logo{width:40px;height:40px;border-radius:12px;background:rgba(4,133,247,.15);display:flex;align-items:center;justify-content:center}
+.brand-logo svg{width:28px;height:28px}
+.brand-txt b{display:block;font-size:16px;font-weight:600;line-height:22px}
+.brand-txt span{font-size:13px;color:var(--mut)}
+.nav-sec{padding:12px 12px 6px;font-size:11px;letter-spacing:.08em;font-weight:600;color:var(--mut);opacity:.8}
+.nav-item{display:flex;align-items:center;gap:12px;height:44px;padding:0 12px;border:none;border-radius:14px;background:none;color:var(--chiptxt);font-size:14px;font-weight:500;width:100%;text-align:left;cursor:pointer}
+.nav-item svg{width:20px;height:20px}
+.nav-item:hover{background:var(--tile);color:var(--txt)}
+.nav-item.active{background:var(--track);color:var(--txt);font-weight:600}
+.sidebar-foot{margin-top:auto;padding:8px 8px 2px;font-size:12px;color:var(--mut)}
+.theme-seg{display:flex;gap:4px;margin:0 0 12px;padding:4px;border-radius:12px;background:var(--tile)}
+.theme-seg button{flex:1;padding:6px 4px;border:none;border-radius:9px;background:none;color:var(--mut);font-size:12px;font-weight:600;cursor:pointer}
+.theme-seg button.on{background:var(--card);color:var(--txt);box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.scrim{display:none}
+/* --- czesc glowna --- */
+.main{margin-left:268px;padding:12px 12px 32px 0;min-height:100vh}
+.topbar{position:sticky;top:12px;z-index:20;display:flex;align-items:center;gap:12px;min-height:64px;padding:10px 12px 10px 20px;background:var(--card);border:1px solid var(--bd);border-radius:20px;margin-bottom:16px}
+.menu-btn{display:none;width:40px;height:40px;border:none;border-radius:12px;background:var(--tile);cursor:pointer;align-items:center;justify-content:center}
+.tb-t{flex:1;min-width:0}
+.tb-t small{display:block;font-size:12px;color:var(--mut)}
+.tb-t b{font-size:18px;font-weight:600}
+.tb-chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.chip{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:12px;background:var(--tile);color:var(--chiptxt);font-size:13px;font-weight:500;white-space:nowrap}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--mut)}
+.dot.ok{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.dot.warn{background:var(--warn)}
+.dot.err{background:var(--err)}
+.page{display:none}
+.page.on{display:block}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.full{grid-column:1/-1}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:24px;padding:20px;min-width:0}
+.card-h{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.card-h>svg{width:40px;height:40px;padding:10px;border-radius:12px;background:var(--tile);color:var(--chiptxt)}
+.ch-t{flex:1;min-width:0;font-size:16px;font-weight:600;line-height:1.3}
+.ch-t small{display:block;font-size:13px;font-weight:400;color:var(--mut)}
+/* kafelki pomiarow */
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.tile{background:var(--tile);border-radius:16px;padding:14px 16px;min-width:0}
+.tile span{display:block;font-size:12px;color:var(--mut)}
+.tile b{display:block;font-size:24px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tile b small{font-size:14px;font-weight:500;color:var(--mut);margin-left:3px}
+.tile i{display:block;font-style:normal;font-size:12px;color:var(--mut);margin-top:2px}
+.presence{display:flex;align-items:center;gap:18px}
+.pres-ring{width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;background:var(--tile);color:var(--mut);transition:all .3s;flex-shrink:0}
+.pres-ring.on{background:var(--oksoft);color:var(--ok);box-shadow:0 0 0 6px var(--oksoft)}
+.pres-txt b{display:block;font-size:20px;font-weight:600}
+.pres-txt span{color:var(--mut);font-size:13px}
+/* wiersze klucz-wartosc */
+.rows{display:flex;flex-direction:column}
+.r{display:flex;align-items:center;gap:12px;min-height:46px;padding:6px 0;border-top:1px solid var(--tile)}
+.r:first-child{border-top:none}
+.r .n{flex:1;min-width:0}
+.r .n small{display:block;font-size:12px;color:var(--mut);margin-top:1px}
+.r .v{font-weight:600;font-variant-numeric:tabular-nums;text-align:right;overflow-wrap:anywhere}
+.r .v a{color:var(--accent);text-decoration:none}
+/* tabela celow */
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{font-size:12px;font-weight:500;color:var(--mut);text-align:right;padding:6px 8px;border-bottom:1px solid var(--tile)}
+td{text-align:right;padding:9px 8px;border-bottom:1px solid var(--tile)}
+th:first-child,td:first-child{text-align:left}
+tr:last-child td{border-bottom:none}
+.tid{display:inline-flex;align-items:center;gap:8px;font-weight:600}
+.tid i{width:10px;height:10px;border-radius:50%}
+.empty{color:var(--mut);text-align:center;padding:18px 8px}
+/* radar */
+.radar-wrap{position:relative;width:100%;background:var(--tile);border-radius:18px;overflow:hidden}
+canvas{display:block;width:100%}
+.radar-opts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.tgl{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px;border-radius:12px;background:var(--tile);border:none;color:var(--chiptxt);font-size:13px;cursor:pointer}
+.tgl input{accent-color:var(--accent)}
+/* formularze */
+.field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}
+.field label{font-size:12px;color:var(--mut);font-weight:500}
+.input{height:42px;padding:0 14px;border-radius:12px;border:1px solid var(--track);background:var(--tile);outline:none;width:100%}
+.input:focus{border-color:var(--accent)}
+.pw{position:relative}
+.pw .input{padding-right:46px}
+.eye{position:absolute;right:4px;top:4px;width:34px;height:34px;border:none;border-radius:9px;background:none;color:var(--mut);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.frow{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:42px;padding:0 18px;border:none;border-radius:12px;background:var(--track);color:var(--txt);font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:hover{filter:brightness(1.12)}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.danger{background:var(--errsoft);color:var(--errtxt)}
+.btn:disabled{opacity:.55;cursor:default;filter:none}
+.btn svg{width:17px;height:17px}
+.nets{display:flex;flex-direction:column;gap:6px;margin-top:12px;max-height:320px;overflow:auto}
+.net{display:flex;align-items:center;gap:12px;width:100%;padding:10px 14px;border:1px solid transparent;border-radius:14px;background:var(--tile);cursor:pointer;text-align:left}
+.net:hover,.net.sel{border-color:var(--accent)}
+.net b{flex:1;min-width:0;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.net small{color:var(--mut);font-size:12px}
+.bars{display:inline-flex;align-items:flex-end;gap:2px;height:14px}
+.bars i{width:4px;border-radius:1px;background:var(--track)}
+.bars i.on{background:var(--ok)}
+.bars i:nth-child(1){height:5px}.bars i:nth-child(2){height:8px}.bars i:nth-child(3){height:11px}.bars i:nth-child(4){height:14px}
+.msg{margin-top:14px;padding:14px 16px;border-radius:14px;font-size:14px;line-height:1.5;background:var(--tile)}
+.msg.ok{background:var(--oksoft);color:var(--oktxt)}
+.msg.err{background:var(--errsoft);color:var(--errtxt)}
+.msg b{color:var(--txt)}
+.msg a{color:inherit;font-weight:600}
+.hint{font-size:13px;color:var(--mut);line-height:1.5}
+.welcome{display:none;margin-bottom:16px;background:linear-gradient(135deg,rgba(61,139,255,.18),rgba(0,211,167,.10))}
+.welcome.on{display:block}
+.welcome h2{font-size:18px;margin-bottom:6px}
+.spin{width:16px;height:16px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .8s linear infinite;display:inline-block;vertical-align:-3px;margin-right:8px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.warnbox{margin-top:12px;padding:12px 14px;border-radius:14px;background:var(--errsoft);color:var(--errtxt);font-size:13px;line-height:1.5;display:none}
+.warnbox.on{display:block}
+/* telefon */
+@media (max-width:1100px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:900px){
+ .sidebar{top:8px;bottom:8px;left:8px;width:280px;transform:translateX(calc(-100% - 16px));box-shadow:var(--sh)}
+ body.nav-open .sidebar{transform:none}
+ body.nav-open .scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40}
+ .main{margin-left:0;padding:8px 8px 24px}
+ .topbar{top:8px;padding:8px 10px;min-height:56px;border-radius:18px}
+ .menu-btn{display:flex}
+ .tb-t b{font-size:16px}
+ .tb-chips .chip span.lbl{display:none}
+ .grid{grid-template-columns:minmax(0,1fr)}
+ .card{padding:16px;border-radius:20px}
+ .conn{order:-1}
+}
+@media (max-width:420px){.tile b{font-size:21px}.frow .btn{width:100%}}
+</style>
+</head>
+<body>
+<div class="scrim" onclick="navOpen(false)"></div>
+<aside class="sidebar" aria-label="Menu główne">
+  <div class="brand"><div class="brand-logo"><svg viewBox="0 0 512 512" fill="none"><g transform="translate(0.000000,512.000000) scale(0.083333,-0.083333)" fill="var(--logo-body)"><path d="M2823 5499 c-21 -12 -169 -145 -330 -296 -1053 -995 -1400 -1330 -1417 -1367 -33 -69 -30 -2737 3 -2801 65 -127 32 -123 886 -123 l743 0 56 37 c82 54 93 85 112 297 81 891 701 1509 1598 1590 209 19 262 43 304 134 32 70 33 797 2 864 -19 39 -300 310 -1406 1357 -167 158 -321 296 -342 307 -51 28 -159 28 -209 1z m818 -1197 l703 -666 0 -173 0 -173 -63 -8 c-644 -82 -1264 -503 -1591 -1080 -118 -208 -237 -560 -260 -765 l-8 -69 -455 0 -455 0 0 1134 0 1134 703 666 c387 366 708 666 713 666 5 0 326 -300 713 -666z M4446 2399 c-623 -65 -1091 -556 -1140 -1195 -14 -180 73 -292 227 -292 142 0 234 103 235 263 1 400 378 767 790 769 298 2 333 427 38 460 -30 3 -97 1 -150 -5z"/></g><g transform="translate(0.000000,512.000000) scale(0.083333,-0.083333)" fill="#2CA9E1"><path d="M2815 4269 c-161 -92 -174 -315 -24 -418 l53 -36 0 -273 0 -272 207 -207 207 -206 68 51 69 52 -192 191 -191 191 0 240 0 241 41 22 c129 69 154 263 51 377 -69 76 -201 97 -289 47z m184 -149 c56 -70 16 -160 -71 -160 -60 0 -96 36 -96 94 0 91 113 136 167 66z M3402 3943 c-135 -58 -158 -247 -42 -333 l36 -27 0 -161 0 -161 92 -94 c107 -110 88 -105 192 -58 l82 36 -99 97 -99 97 0 125 0 125 42 36 c159 140 -10 403 -204 318z m120 -139 c42 -46 -11 -125 -66 -96 -40 22 -52 57 -31 91 24 35 67 38 97 5z M2406 3746 c-167 -78 -189 -294 -42 -396 46 -31 47 -34 48 -103 l0 -72 284 -285 284 -285 63 63 63 62 -263 264 c-295 296 -297 300 -214 357 216 150 14 506 -223 395z m153 -160 c37 -43 25 -97 -28 -124 -89 -47 -166 75 -87 138 38 30 83 24 115 -14z M1896 2495 c-235 -94 -133 -455 117 -415 43 7 48 4 160 -106 l116 -114 120 0 119 0 32 75 c18 41 32 79 32 84 0 5 -53 9 -117 9 l-118 0 -86 87 -86 87 1 72 c3 166 -145 278 -290 221z m122 -151 c43 -39 14 -124 -42 -124 -59 0 -89 77 -48 122 25 27 61 28 90 2z M4434 1436 c-317 -154 -213 -627 138 -626 433 2 445 632 12 651 -76 3 -99 -1 -150 -25z"/></g></svg></div><div class="brand-txt"><b>SIH Radar</b><span>mmWave 24 GHz</span></div></div>
+  <div class="nav-sec">PODGLĄD</div>
+  <button class="nav-item" data-p="pulpit" onclick="go('pulpit')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Pulpit</button>
+  <button class="nav-item" data-p="radar" onclick="go('radar')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21 4.5 7.5A9 9 0 0 1 19.5 7.5z"/><path d="M12 21 8 13.5a4.5 4.5 0 0 1 8 0z"/></svg>Radar</button>
+  <div class="nav-sec">USTAWIENIA</div>
+  <button class="nav-item" data-p="siec" onclick="go('siec')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M2 9a14 14 0 0 1 20 0"/><circle cx="12" cy="19.5" r="1"/></svg>Sieć Wi‑Fi</button>
+  <button class="nav-item" data-p="system" onclick="go('system')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg>System</button>
+  <div class="sidebar-foot">
+    <div class="theme-seg" role="group" aria-label="Motyw"><button data-th="auto" onclick="setTheme('auto')">Auto</button><button data-th="dark" onclick="setTheme('dark')">Ciemny</button><button data-th="light" onclick="setTheme('light')">Jasny</button></div>
+    <div id="foot-ver">SIH Radar</div><div>smartinhome.pl</div>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <button class="menu-btn" onclick="navOpen(true)" aria-label="Menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+    <div class="tb-t"><small id="tb-sec">Podgląd</small><b id="tb-title">Pulpit</b></div>
+    <div class="tb-chips">
+      <span class="chip" title="Radar"><span class="dot" id="tb-rd"></span><span class="lbl">Radar</span></span>
+      <span class="chip" title="Sieć"><span class="dot" id="tb-net"></span><span id="tb-net-t">--</span></span>
+    </div>
+  </header>
+
+  <!-- ===================== PULPIT ===================== -->
+  <section class="page" id="p-pulpit">
+    <div class="card welcome" id="welcome">
+      <h2>Witaj w SIH Radar</h2>
+      <p class="hint">Moduł działa jako punkt dostępowy <b id="w-ap">SIH-Radar</b>. Połącz go z domową siecią Wi‑Fi, żeby mieć do niego dostęp z każdego urządzenia w domu.</p>
+      <div class="frow"><button class="btn primary" onclick="go('siec')">Połącz z siecią Wi‑Fi</button></div>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M4 21v-1a7 7 0 0 1 14 0v1"/></svg><div class="ch-t">Obecność<small>radar HLK-LD2450</small></div></div>
+        <div class="presence"><div class="pres-ring" id="pres-n">–</div><div class="pres-txt"><b id="pres-t">Czekam na dane…</b><span id="pres-s">&nbsp;</span></div></div>
+        <div class="warnbox" id="rd-warn">Brak danych z radaru. Sprawdź zasilanie 5 V oraz przewody: <b>GP18 → RX</b> radaru i <b>GP19 ← TX</b> radaru.</div>
+      </div>
+      <div class="card">
+        <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg><div class="ch-t">Klimat i powietrze<small id="bme-sub">BME688</small></div></div>
+        <div class="tiles" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+          <div class="tile"><span>Temperatura</span><b id="v-t">--<small>°C</small></b></div>
+          <div class="tile"><span>Wilgotność</span><b id="v-h">--<small>%</small></b></div>
+          <div class="tile"><span>Ciśnienie</span><b id="v-p">--<small>hPa</small></b></div>
+          <div class="tile"><span>Rezystancja gazu</span><b id="v-g">--<small>kΩ</small></b><i id="v-gi">&nbsp;</i></div>
+        </div>
+        <div class="warnbox" id="bme-warn">Nie znaleziono czujnika BME688. Sprawdź przewody: <b>SDA → GP20</b>, <b>SCL → GP21</b>, zasilanie <b>3V3</b> i GND. Moduł szuka czujnika co 10 s.</div>
+      </div>
+      <div class="card full">
+        <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21 4.5 7.5A9 9 0 0 1 19.5 7.5z"/><circle cx="12" cy="11" r="1.5"/></svg><div class="ch-t">Wykryte cele<small>odległość i kąt względem radaru</small></div><button class="btn" onclick="go('radar')">Podgląd radaru</button></div>
+        <table><thead><tr><th>Cel</th><th>Odległość</th><th>Kąt</th><th>X</th><th>Y</th><th>Prędkość</th></tr></thead><tbody id="tg-1"></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== RADAR ===================== -->
+  <section class="page" id="p-radar">
+    <div class="grid">
+      <div class="card full">
+        <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21 4.5 7.5A9 9 0 0 1 19.5 7.5z"/><path d="M12 21 8 13.5a4.5 4.5 0 0 1 8 0z"/></svg><div class="ch-t">Pole widzenia radaru<small>zasięg 6 m, kąt ±60° · widok z góry, radar na dole</small></div><span class="chip"><span class="dot" id="rd-dot"></span><span id="rd-fps">-- kl./s</span></span></div>
+        <div class="radar-wrap"><canvas id="cv" aria-label="Pozycje wykrytych osób"></canvas></div>
+        <div class="radar-opts">
+          <label class="tgl"><input type="checkbox" id="o-trail" checked onchange="saveOpt()">Ślad ruchu</label>
+          <label class="tgl"><input type="checkbox" id="o-flip" onchange="saveOpt()">Odwróć lewo/prawo</label>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg><div class="ch-t">Cele<small>do 3 osób jednocześnie</small></div></div>
+        <table><thead><tr><th>Cel</th><th>Odległość</th><th>Kąt</th><th>X</th><th>Y</th><th>Prędkość</th></tr></thead><tbody id="tg-2"></tbody></table>
+      </div>
+      <div class="card">
+        <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><div class="ch-t">Łącze z radarem<small>UART 256000 bd</small></div></div>
+        <div class="rows">
+          <div class="r"><div class="n">Stan</div><span class="v" id="rd-st">--</span></div>
+          <div class="r"><div class="n">Firmware radaru</div><span class="v" id="rd-fw">--</span></div>
+          <div class="r"><div class="n">Ramki<small>poprawne od startu</small></div><span class="v" id="rd-fr">--</span></div>
+          <div class="r"><div class="n">Błędne ramki<small>zakłócenia na przewodach</small></div><span class="v" id="rd-er">--</span></div>
+          <div class="r"><div class="n">Transmisja do panelu</div><span class="v" id="rd-tr">--</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SIEC ===================== -->
+  <section class="page" id="p-siec">
+    <div class="grid">
+      <div class="card">
+        <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M2 9a14 14 0 0 1 20 0"/><circle cx="12" cy="19.5" r="1"/></svg><div class="ch-t">Połączenie<small>odświeżane co 5 s</small></div></div>
+        <div class="rows">
+          <div class="r"><div class="n">Tryb</div><span class="v" id="n-mode">--</span></div>
+          <div class="r"><div class="n">Sieć</div><span class="v" id="n-ssid">--</span></div>
+          <div class="r"><div class="n">Adres IP</div><span class="v" id="n-ip">--</span></div>
+          <div class="r"><div class="n">Nazwa w sieci<small>działa na komputerach i iPhone</small></div><span class="v" id="n-host">--</span></div>
+          <div class="r"><div class="n">Siła sygnału</div><span class="v" id="n-rssi">--</span></div>
+          <div class="r"><div class="n">Punkt dostępowy modułu<small>hasło domyślne: smartinhome</small></div><span class="v" id="n-ap">--</span></div>
+        </div>
+      </div>
+      <div class="card conn">
+        <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg><div class="ch-t">Połącz z siecią Wi‑Fi<small>moduł obsługuje tylko sieci 2,4 GHz</small></div></div>
+        <button class="btn" id="scan-btn" onclick="scan()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg>Szukaj sieci</button>
+        <div class="nets" id="nets"></div>
+        <div class="frow">
+          <div class="field"><label for="ssid">Nazwa sieci (SSID)</label><input class="input" id="ssid" maxlength="32" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
+        </div>
+        <div class="frow">
+          <div class="field"><label for="pass">Hasło</label><div class="pw"><input class="input" id="pass" type="password" maxlength="64" autocomplete="off"><button type="button" class="eye" onclick="togglePw()" aria-label="Pokaż hasło"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+          <button class="btn primary" id="conn-btn" onclick="connect()">Połącz</button>
+        </div>
+        <div class="msg" id="wmsg" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SYSTEM ===================== -->
+  <section class="page" id="p-system">
+    <div class="grid">
+      <div class="card">
+        <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg><div class="ch-t">Moduł<small>ESP32-C6 · odświeżane co 5 s</small></div></div>
+        <div class="rows">
+          <div class="r"><div class="n">Firmware<small id="s-build">--</small></div><span class="v" id="s-ver">--</span></div>
+          <div class="r"><div class="n">Czas pracy</div><span class="v" id="s-up">--</span></div>
+          <div class="r"><div class="n">Wolna pamięć<small id="s-heapmin">--</small></div><span class="v" id="s-heap">--</span></div>
+          <div class="r"><div class="n">Temperatura chipa</div><span class="v" id="s-temp">--</span></div>
+          <div class="r"><div class="n">Adres MAC</div><span class="v" id="s-mac">--</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v4M15 3v4M9 17v4M15 17v4M3 9h4M3 15h4M17 9h4M17 15h4"/><rect x="7" y="7" width="10" height="10" rx="2"/></svg><div class="ch-t">Czujniki<small>podłączenia wg PINOUT.md</small></div></div>
+        <div class="rows">
+          <div class="r"><div class="n">Radar HLK-LD2450<small>UART1 · GP18 TX, GP19 RX</small></div><span class="v" id="s-rd">--</span></div>
+          <div class="r"><div class="n">Czujnik środowiskowy<small>I2C · GP20 SDA, GP21 SCL</small></div><span class="v" id="s-bme">--</span></div>
+          <div class="r"><div class="n">Pomiary BME<small>co 3 s</small></div><span class="v" id="s-bmen">--</span></div>
+        </div>
+      </div>
+      <div class="card full">
+        <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg><div class="ch-t">Serwis<small>przytrzymanie BOOT przez 5 s kasuje sieć Wi‑Fi (powrót do trybu punktu dostępowego)</small></div></div>
+        <button class="btn danger" onclick="reboot()">Uruchom ponownie</button>
+        <div class="msg" id="smsg" hidden></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+'use strict';
+var $ = function(id){ return document.getElementById(id); };
+var PAGES = { pulpit:['Podgląd','Pulpit'], radar:['Podgląd','Radar'], siec:['Ustawienia','Sieć Wi‑Fi'], system:['Ustawienia','System'] };
+var COLORS = ['#3d8bff', '#17c964', '#f5a524'];
+var st = null, sens = null, opt = { trail:true, flip:false }, trails = {}, ws = null, wsOk = false, pollT = null;
+
+function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
+function lsSet(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function nf(v, d){ return Number(v).toLocaleString('pl-PL', { minimumFractionDigits:d, maximumFractionDigits:d }); }
+
+// --- motyw i nawigacja ---
+function setTheme(t){
+  if (t === 'auto') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', t);
+  lsSet('sih_theme', t);
+  document.querySelectorAll('.theme-seg button').forEach(function(b){ b.classList.toggle('on', b.dataset.th === t); });
+  drawRadar();
+}
+function navOpen(o){ document.body.classList.toggle('nav-open', o); }
+function go(p){
+  if (!PAGES[p]) p = 'pulpit';
+  if (location.hash !== '#' + p) history.replaceState(null, '', '#' + p);
+  document.querySelectorAll('.page').forEach(function(e){ e.classList.toggle('on', e.id === 'p-' + p); });
+  document.querySelectorAll('.nav-item').forEach(function(e){ e.classList.toggle('active', e.dataset.p === p); });
+  $('tb-sec').textContent = PAGES[p][0];
+  $('tb-title').textContent = PAGES[p][1];
+  navOpen(false);
+  if (p === 'radar') setTimeout(drawRadar, 0);
+  if (p === 'siec' && !$('nets').children.length && st && st.wifi.mode === 'ap') scan();
+}
+window.addEventListener('hashchange', function(){ go(location.hash.slice(1)); });
+
+// --- status modulu ---
+function fmtUp(s){
+  var d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
+  return (d ? d + ' d ' : '') + (d || h ? h + ' h ' : '') + m + ' min';
+}
+function rssiTxt(r){
+  var q = r >= -55 ? 'bardzo dobry' : r >= -67 ? 'dobry' : r >= -75 ? 'słaby' : 'bardzo słaby';
+  return r + ' dBm · ' + q;
+}
+async function loadStatus(){
+  try {
+    var r = await fetch('/api/status', { cache:'no-store' });
+    st = await r.json();
+  } catch(e) { setNet('err', 'brak połączenia'); return; }
+  var w = st.wifi;
+  var ap = w.mode === 'ap';
+  setNet(w.mode === 'sta' ? 'ok' : ap ? 'warn' : 'err',
+         w.mode === 'sta' ? w.ssid : ap ? 'punkt dostępowy' : 'łączenie…');
+  $('welcome').classList.toggle('on', ap);
+  $('w-ap').textContent = w.ap_ssid;
+  $('n-mode').textContent = w.mode === 'sta' ? 'sieć domowa' : ap ? 'punkt dostępowy (konfiguracja)' : 'łączenie…';
+  $('n-ssid').textContent = ap ? (w.ssid ? w.ssid + ' (zapisana, niedostępna)' : 'nie skonfigurowano') : (w.ssid || '--');
+  $('n-ip').textContent = w.ip;
+  $('n-host').innerHTML = w.mode === 'sta' ? '<a href="http://' + esc(w.host) + '.local/">' + esc(w.host) + '.local</a>' : esc(w.host) + '.local';
+  $('n-rssi').textContent = w.mode === 'sta' ? rssiTxt(w.rssi) + ' · kanał ' + w.ch : '--';
+  $('n-ap').textContent = ap ? w.ap_ssid + ' · klienci: ' + w.ap_clients : 'wyłączony';
+  $('s-ver').textContent = st.fw;
+  $('foot-ver').textContent = 'SIH Radar ' + st.fw;
+  $('s-build').textContent = 'zbudowano ' + st.build + ' · ESP-IDF ' + st.idf;
+  $('s-up').textContent = fmtUp(st.uptime);
+  $('s-heap').textContent = nf(st.heap / 1024, 1) + ' KB';
+  $('s-heapmin').textContent = 'najmniej od startu: ' + nf(st.heap_min / 1024, 1) + ' KB';
+  $('s-temp').textContent = st.chip_temp > -100 ? nf(st.chip_temp, 1) + ' °C' : '--';
+  $('s-mac').textContent = st.mac;
+}
+function setNet(cls, txt){ $('tb-net').className = 'dot ' + cls; $('tb-net-t').textContent = txt; }
+
+// --- dane czujnikow (WebSocket, a gdy nie dziala - odpytywanie) ---
+function wsStart(){
+  try { ws = new WebSocket('ws://' + location.host + '/ws'); } catch(e) { pollStart(); return; }
+  var opened = false;
+  ws.onopen = function(){ opened = true; wsOk = true; pollStop(); };
+  ws.onmessage = function(ev){ try { onSensors(JSON.parse(ev.data)); } catch(e){} };
+  ws.onclose = function(){
+    wsOk = false; ws = null;
+    pollStart();
+    setTimeout(wsStart, opened ? 2000 : 8000);
+  };
+}
+function pollStart(){ if (!pollT) pollT = setInterval(poll, 1000); }
+function pollStop(){ if (pollT) { clearInterval(pollT); pollT = null; } }
+async function poll(){
+  try { onSensors(await (await fetch('/api/sensors', { cache:'no-store' })).json()); } catch(e){}
+}
+
+function persons(n){ return n === 1 ? '1 osoba' : n + (n >= 2 && n <= 4 ? ' osoby' : ' osób'); }
+function onSensors(d){
+  sens = d;
+  var r = d.radar, b = d.bme;
+  // obecnosc
+  var ring = $('pres-n');
+  $('rd-warn').classList.toggle('on', !r.online);
+  $('tb-rd').className = 'dot ' + (r.online ? 'ok' : 'err');
+  if (!r.online) {
+    ring.textContent = '–'; ring.classList.remove('on');
+    $('pres-t').textContent = 'Radar niedostępny'; $('pres-s').textContent = '';
+  } else {
+    ring.textContent = r.count; ring.classList.toggle('on', r.count > 0);
+    $('pres-t').textContent = r.count ? 'Wykryto ' + persons(r.count) : 'Brak obecności';
+    var near = r.targets.reduce(function(m, t){ var dd = Math.hypot(t.x, t.y); return m === null || dd < m ? dd : m; }, null);
+    $('pres-s').textContent = near !== null ? 'najbliżej ' + nf(near / 1000, 1) + ' m od radaru' : 'pokój pusty';
+  }
+  // klimat
+  $('bme-warn').classList.toggle('on', !b.online && b.n === 0);
+  $('bme-sub').textContent = b.online ? b.chip + ' · adres 0x' + b.addr.toString(16).toUpperCase() : 'czujnik niedostępny';
+  setVal('v-t', b.online ? nf(b.t, 1) : '--', '°C');
+  setVal('v-h', b.online ? nf(b.h, 0) : '--', '%');
+  setVal('v-p', b.online ? nf(b.p, 0) : '--', 'hPa');
+  setVal('v-g', b.online && b.gas_ok ? nf(b.gas, b.gas < 100 ? 1 : 0) : '--', 'kΩ');
+  $('v-gi').textContent = b.online ? (b.gas_ok ? 'wyższa = czystsze powietrze' : 'nagrzewanie czujnika…') : ' ';
+  // cele
+  var rows = targetRows(r);
+  $('tg-1').innerHTML = rows; $('tg-2').innerHTML = rows;
+  // radar - lacze
+  $('rd-dot').className = 'dot ' + (r.online ? 'ok' : 'err');
+  $('rd-fps').textContent = r.fps + ' kl./s';
+  $('rd-st').textContent = r.online ? 'działa' : 'brak danych';
+  $('rd-fw').textContent = r.fw || '--';
+  $('rd-fr').textContent = r.frames.toLocaleString('pl-PL');
+  $('rd-er').textContent = r.errors.toLocaleString('pl-PL');
+  $('rd-tr').textContent = wsOk ? 'na żywo (WebSocket)' : 'odpytywanie co 1 s';
+  $('s-rd').textContent = r.online ? 'działa' + (r.fw ? ' · ' + r.fw : '') : 'brak danych';
+  $('s-bme').textContent = b.chip ? b.chip + ' · 0x' + b.addr.toString(16).toUpperCase() : 'nie znaleziono';
+  $('s-bmen').textContent = b.n.toLocaleString('pl-PL');
+  // slady ruchu
+  var now = Date.now();
+  r.targets.forEach(function(t){
+    var a = trails[t.id] || (trails[t.id] = []);
+    a.push({ x:t.x, y:t.y, t:now });
+    while (a.length > 40) a.shift();
+  });
+  Object.keys(trails).forEach(function(k){ trails[k] = trails[k].filter(function(p){ return now - p.t < 4000; }); });
+  drawRadar();
+}
+function setVal(id, v, u){ $(id).innerHTML = esc(v) + '<small>' + u + '</small>'; }
+function targetRows(r){
+  if (!r.online) return '<tr><td colspan="6" class="empty">Brak danych z radaru</td></tr>';
+  if (!r.targets.length) return '<tr><td colspan="6" class="empty">Nikogo nie wykryto</td></tr>';
+  return r.targets.map(function(t){
+    var dist = Math.hypot(t.x, t.y) / 1000;
+    var ang = Math.atan2(t.x, t.y) * 180 / Math.PI;
+    var v = t.v / 100;
+    return '<tr><td><span class="tid"><i style="background:' + COLORS[(t.id - 1) % 3] + '"></i>' + t.id + '</span></td>' +
+      '<td>' + nf(dist, 2) + ' m</td><td>' + nf(ang, 0) + '°</td>' +
+      '<td>' + nf(t.x / 1000, 2) + ' m</td><td>' + nf(t.y / 1000, 2) + ' m</td>' +
+      '<td>' + (Math.abs(v) < 0.05 ? 'stoi' : nf(Math.abs(v), 1) + ' m/s ' + (v < 0 ? '↓' : '↑')) + '</td></tr>';
+  }).join('');
+}
+
+// --- podglad radaru ---
+function cssVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function drawRadar(){
+  var cv = $('cv');
+  if (!cv || !$('p-radar').classList.contains('on')) return;
+  var W = cv.clientWidth, H = Math.round(Math.min(Math.max(W * 0.62, 280), 560));
+  var dpr = window.devicePixelRatio || 1;
+  if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) {
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.height = H + 'px';
+  }
+  var g = cv.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, W, H);
+  var R = 6000, A = 60 * Math.PI / 180, pad = 26;
+  var s = Math.min((W / 2 - pad) / (R * Math.sin(A)), (H - pad - 18) / R);
+  var ox = W / 2, oy = H - 18;
+  var flip = opt.flip ? -1 : 1;
+  function P(x, y){ return [ox + flip * x * s, oy - y * s]; }
+  var grid = cssVar('--grid'), mut = cssVar('--mut');
+  // sektor
+  g.beginPath(); g.moveTo(ox, oy);
+  g.arc(ox, oy, R * s, -Math.PI / 2 - A, -Math.PI / 2 + A); g.closePath();
+  g.fillStyle = cssVar('--sector'); g.fill();
+  g.strokeStyle = grid; g.lineWidth = 1;
+  for (var m = 1; m <= 6; m++) {
+    g.beginPath(); g.arc(ox, oy, m * 1000 * s, -Math.PI / 2 - A, -Math.PI / 2 + A); g.stroke();
+  }
+  [-60, -30, 0, 30, 60].forEach(function(a){
+    var r = a * Math.PI / 180;
+    g.beginPath(); g.moveTo(ox, oy); g.lineTo(ox + Math.sin(r) * R * s, oy - Math.cos(r) * R * s); g.stroke();
+  });
+  g.fillStyle = mut; g.font = '11px Segoe UI, system-ui, sans-serif'; g.textAlign = 'left';
+  for (m = 1; m <= 6; m++) {
+    var lx = ox + Math.sin(A) * m * 1000 * s + 4, ly = oy - Math.cos(A) * m * 1000 * s;
+    g.fillText(m + ' m', lx, ly);
+  }
+  // radar
+  g.fillStyle = cssVar('--accent');
+  g.beginPath(); g.roundRect ? g.roundRect(ox - 14, oy, 28, 8, 3) : g.rect(ox - 14, oy, 28, 8); g.fill();
+  // slady
+  if (opt.trail) {
+    Object.keys(trails).forEach(function(k){
+      var a = trails[k]; if (a.length < 2) return;
+      g.strokeStyle = COLORS[(k - 1) % 3]; g.lineWidth = 2; g.lineCap = 'round';
+      for (var i = 1; i < a.length; i++) {
+        g.globalAlpha = i / a.length * 0.5;
+        var p0 = P(a[i - 1].x, a[i - 1].y), p1 = P(a[i].x, a[i].y);
+        g.beginPath(); g.moveTo(p0[0], p0[1]); g.lineTo(p1[0], p1[1]); g.stroke();
+      }
+      g.globalAlpha = 1;
+    });
+  }
+  // cele
+  if (sens && sens.radar.online) {
+    sens.radar.targets.forEach(function(t){
+      var p = P(t.x, t.y), c = COLORS[(t.id - 1) % 3];
+      g.fillStyle = c; g.globalAlpha = 0.18;
+      g.beginPath(); g.arc(p[0], p[1], 20, 0, Math.PI * 2); g.fill();
+      g.globalAlpha = 1;
+      g.beginPath(); g.arc(p[0], p[1], 8, 0, Math.PI * 2); g.fill();
+      g.fillStyle = cssVar('--txt'); g.font = '600 12px Segoe UI, system-ui, sans-serif'; g.textAlign = 'center';
+      g.fillText(t.id + ' · ' + nf(Math.hypot(t.x, t.y) / 1000, 1) + ' m', p[0], p[1] - 26);
+    });
+  }
+}
+window.addEventListener('resize', drawRadar);
+function saveOpt(){
+  opt.trail = $('o-trail').checked; opt.flip = $('o-flip').checked;
+  lsSet('sih_radar_opt', JSON.stringify(opt));
+  drawRadar();
+}
+
+// --- Wi-Fi ---
+function bars(rssi){
+  var n = rssi >= -55 ? 4 : rssi >= -67 ? 3 : rssi >= -75 ? 2 : 1, h = '';
+  for (var i = 1; i <= 4; i++) h += '<i class="' + (i <= n ? 'on' : '') + '"></i>';
+  return '<span class="bars">' + h + '</span>';
+}
+var nets = [];
+async function scan(){
+  var btn = $('scan-btn'), box = $('nets');
+  btn.disabled = true;
+  box.innerHTML = '<div class="hint"><span class="spin"></span>Szukam sieci…</div>';
+  try {
+    nets = await (await fetch('/api/wifi/scan', { cache:'no-store' })).json();
+    if (!nets.length) box.innerHTML = '<div class="hint">Nie znaleziono sieci 2,4 GHz. Spróbuj ponownie lub wpisz nazwę ręcznie.</div>';
+    else box.innerHTML = nets.map(function(n, i){
+      return '<button type="button" class="net" data-i="' + i + '" onclick="pick(' + i + ')">' + bars(n.rssi) +
+        '<b>' + esc(n.ssid) + '</b><small>' + (n.auth ? '🔒 ' : 'otwarta · ') + n.rssi + ' dBm</small></button>';
+    }).join('');
+  } catch(e) {
+    box.innerHTML = '<div class="hint">Błąd skanowania – spróbuj ponownie.</div>';
+  }
+  btn.disabled = false;
+}
+function pick(i){
+  var n = nets[i];
+  $('ssid').value = n.ssid;
+  document.querySelectorAll('.net').forEach(function(e){ e.classList.toggle('sel', +e.dataset.i === i); });
+  $('pass').value = '';
+  $('pass').placeholder = n.auth ? '' : 'sieć otwarta – bez hasła';
+  if (n.auth) $('pass').focus();
+}
+function togglePw(){ var p = $('pass'); p.type = p.type === 'password' ? 'text' : 'password'; }
+function wmsg(cls, html){ var m = $('wmsg'); m.hidden = false; m.className = 'msg ' + cls; m.innerHTML = html; }
+function failText(code, ssid){
+  if (code === 15 || code === 202 || code === 204 || code === 2 || code === 14)
+    return 'Nieprawidłowe hasło do sieci <b>' + esc(ssid) + '</b>. Sprawdź wielkość liter i spróbuj ponownie.';
+  if (code === 201 || code === 210 || code === 211 || code === 212)
+    return 'Nie znaleziono sieci <b>' + esc(ssid) + '</b> lub jej zabezpieczenia nie są obsługiwane. Moduł widzi tylko sieci 2,4 GHz – sprawdź, czy router nadaje w tym paśmie i czy moduł nie jest za daleko.';
+  if (code === 0)
+    return 'Moduł połączył się z siecią, ale router nie przydzielił mu adresu IP. Sprawdź DHCP w routerze.';
+  return 'Nie udało się połączyć z siecią <b>' + esc(ssid) + '</b> (kod ' + code + ').';
+}
+async function connect(){
+  var ssid = $('ssid').value.trim(), pass = $('pass').value;
+  if (!ssid) { wmsg('err', 'Wybierz sieć z listy albo wpisz jej nazwę.'); return; }
+  if (pass && pass.length < 8) { wmsg('err', 'Hasło sieci Wi‑Fi ma co najmniej 8 znaków.'); return; }
+  var btn = $('conn-btn'); btn.disabled = true;
+  wmsg('', '<span class="spin"></span>Wysyłam dane do modułu…');
+  var res;
+  try {
+    var r = await fetch('/api/wifi/connect', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ ssid:ssid, password:pass }) });
+    res = await r.json();
+  } catch(e) { wmsg('err', 'Brak odpowiedzi modułu. Sprawdź, czy telefon jest nadal połączony z siecią modułu.'); btn.disabled = false; return; }
+  if (!res.ok) { wmsg('err', esc(res.error)); btn.disabled = false; return; }
+  if (!res.test) {
+    wmsg('ok', 'Zapisano. Moduł uruchamia się ponownie i łączy z siecią <b>' + esc(ssid) + '</b>.<br>Jeśli zmieni adres, znajdziesz go pod <a href="http://' + esc(st.wifi.host) + '.local/">http://' + esc(st.wifi.host) + '.local</a> albo w ustawieniach routera.');
+    return;
+  }
+  // Tryb AP: modul sprawdza siec na zywo, panel sledzi wynik
+  var t0 = Date.now(), lost = 0;
+  while (Date.now() - t0 < 70000) {
+    await new Promise(function(ok){ setTimeout(ok, 1000); });
+    var s;
+    try { s = await (await fetch('/api/wifi/test', { cache:'no-store' })).json(); lost = 0; }
+    catch(e) {
+      if (++lost > 2) wmsg('', '<span class="spin"></span>Moduł przełącza kanał radiowy – telefon mógł się na chwilę rozłączyć. Czekam…');
+      continue;
+    }
+    if (s.state === 'running') { wmsg('', '<span class="spin"></span>Łączę z siecią <b>' + esc(ssid) + '</b> (próba ' + Math.min(s.try, 3) + ' z 3)…'); continue; }
+    if (s.state === 'ok') {
+      var url = 'http://' + s.ip + '/';
+      wmsg('ok', '<b>Połączono z siecią ' + esc(s.ssid) + '.</b><br>Adres modułu w sieci domowej: <a href="' + url + '">' + s.ip + '</a> (lub <a href="http://' + esc(s.host) + '.local/">' + esc(s.host) + '.local</a>).<br><br>Za ok. ' + s.restart_s + ' s moduł wyłączy swój punkt dostępowy. Połącz telefon z siecią <b>' + esc(s.ssid) + '</b> i otwórz powyższy adres. Zapisz go sobie.');
+      return;
+    }
+    if (s.state === 'fail') { wmsg('err', failText(s.reason, ssid)); btn.disabled = false; return; }
+  }
+  wmsg('err', 'Brak odpowiedzi modułu. Jeśli dioda świeci na zielono, moduł jest już w sieci domowej – znajdziesz go pod http://' + esc(st ? st.wifi.host : 'sih-radar') + '.local');
+  btn.disabled = false;
+}
+
+// --- serwis ---
+async function reboot(){
+  if (!confirm('Uruchomić moduł ponownie?')) return;
+  var m = $('smsg'); m.hidden = false; m.className = 'msg';
+  m.innerHTML = '<span class="spin"></span>Restart…';
+  try { await fetch('/api/reboot', { method:'POST' }); } catch(e){}
+  setTimeout(function(){ location.reload(); }, 8000);
+}
+
+// --- start ---
+(function(){
+  var t = lsGet('sih_theme') || 'auto';
+  document.querySelectorAll('.theme-seg button').forEach(function(b){ b.classList.toggle('on', b.dataset.th === t); });
+  try { var o = JSON.parse(lsGet('sih_radar_opt') || '{}'); if (typeof o.trail === 'boolean') opt.trail = o.trail; if (typeof o.flip === 'boolean') opt.flip = o.flip; } catch(e){}
+  $('o-trail').checked = opt.trail; $('o-flip').checked = opt.flip;
+  var first = location.hash.slice(1);
+  go(first || 'pulpit');
+  loadStatus().then(function(){
+    // Pierwsze wejscie w trybie AP (portal z telefonu): od razu konfiguracja sieci
+    if (st && st.wifi.mode === 'ap' && !first) go('siec');
+  });
+  setInterval(loadStatus, 5000);
+  poll();
+  wsStart();
+})();
+</script>
+</body>
+</html>

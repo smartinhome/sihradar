@@ -1,0 +1,88 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      TZ: UTC
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Testy parsera LD2450 i obliczen BME688 (na komputerze)
+        run: |
+          gcc -std=c11 -Wall -Wextra \
+            -Ifirmware/components/ld2450 -Ifirmware/components/bme688 \
+            tools/test_host.c firmware/components/ld2450/ld2450_proto.c \
+            firmware/components/bme688/bme68x_calc.c -lm -o test_host
+          ./test_host
+
+      - name: Ustaw wersje firmware z nazwy tagu
+        # ESP-IDF czyta firmware/version.txt zamiast 'git describe' - build z tagu
+        # zaszywa dokladnie te wersje. Push na branch: wersja z git describe.
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "${{ github.ref_name }}" > firmware/version.txt
+          fi
+
+      - name: Setup ESP-IDF
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.2.1
+          target: esp32c6
+          path: firmware
+
+      - name: Pelny obraz do pierwszego wgrania (adres 0x0)
+        run: |
+          pip install -q esptool
+          cd firmware/build
+          python -m esptool --chip esp32c6 merge_bin -o sih-radar-full.bin \
+            --flash_mode dio --flash_freq 80m --flash_size 4MB \
+            0x0 bootloader/bootloader.bin \
+            0x8000 partition_table/partition-table.bin \
+            0xf000 ota_data_initial.bin \
+            0x20000 sih-radar.bin
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ github.ref_name }}
+          path: |
+            firmware/build/sih-radar.bin
+            firmware/build/sih-radar-full.bin
+            firmware/build/bootloader/bootloader.bin
+            firmware/build/partition_table/partition-table.bin
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware-${{ github.ref_name }}
+          path: dist/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v3
+        with:
+          name: SIH Radar ${{ github.ref_name }}
+          body: |
+            ## SIH Radar ${{ github.ref_name }}
+            - `sih-radar-full.bin` - pierwsze wgranie przez USB (adres 0x0), np. https://espressif.github.io/esptool-js/
+            - `sih-radar.bin` - sama aplikacja (pod przyszle aktualizacje OTA)
+          files: dist/**/*.bin
+          prerelease: ${{ contains(github.ref_name, 'beta') }}

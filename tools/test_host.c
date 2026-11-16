@@ -1,0 +1,140 @@
+// Testy czesci firmware bez ESP-IDF (parser LD2450, obliczenia BME688).
+// Kompilacja na komputerze, np.:
+//   zig cc -std=c11 -Ifirmware/components/ld2450 -Ifirmware/components/bme688 \
+//     tools/test_host.c firmware/components/ld2450/ld2450_proto.c \
+//     firmware/components/bme688/bme68x_calc.c -o test_host && ./test_host
+#include "ld2450_proto.h"
+#include "bme68x_calc.h"
+#include <stdio.h>
+#include <string.h>
+
+static int fails = 0;
+#define CHECK(c) do { if (!(c)) { printf("BLAD %s:%d: %s\n", __FILE__, __LINE__, #c); fails++; } } while (0)
+
+// Przyklad z instrukcji LD2450: cel 1 X=-782 mm, Y=1713 mm, -16 cm/s, rozdz. 320 mm
+static const uint8_t FRAME[30] = {
+    0xAA, 0xFF, 0x03, 0x00,
+    0x0E, 0x03, 0xB1, 0x86, 0x10, 0x00, 0x40, 0x01,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x55, 0xCC,
+};
+
+static int feed_all(ld2450_parser_t *p, const uint8_t *b, int n, int *data, int *ack) {
+    int last = -1;
+    for (int i = 0; i < n; i++) {
+        ld2450_frame_t f = ld2450_parser_feed(p, b[i]);
+        if (f == LD2450_FRAME_DATA) { (*data)++; last = i; }
+        if (f == LD2450_FRAME_ACK)  { (*ack)++;  last = i; }
+    }
+    return last;
+}
+
+static void test_ld2450(void) {
+    ld2450_target_t t[3];
+    ld2450_decode_targets(FRAME, t);
+    CHECK(t[0].valid);
+    CHECK(t[0].x_mm == -782);
+    CHECK(t[0].y_mm == 1713);
+    CHECK(t[0].speed_cms == -16);
+    CHECK(t[0].res_mm == 320);
+    CHECK(!t[1].valid && !t[2].valid);
+
+    // Strumien: smieci, ramka, urwana ramka, smieci z bajtem AA, ramka, odpowiedz z wersja
+    static const uint8_t ACK_FW[22] = {
+        0xFD, 0xFC, 0xFB, 0xFA, 0x0C, 0x00, 0xA0, 0x01, 0x00, 0x00, 0x00, 0x01,
+        0x02, 0x01, 0x16, 0x24, 0x06, 0x22, 0x04, 0x03, 0x02, 0x01,
+    };
+    uint8_t s[256];
+    int n = 0;
+    s[n++] = 0x13; s[n++] = 0xAA; s[n++] = 0x00; s[n++] = 0xFD;
+    memcpy(s + n, FRAME, 30); n += 30;
+    memcpy(s + n, FRAME, 12); n += 12;                 // urwana
+    s[n++] = 0xAA; s[n++] = 0xAA;
+    memcpy(s + n, FRAME, 30); n += 30;
+    memcpy(s + n, ACK_FW, 22); n += 22;
+
+    ld2450_parser_t p;
+    ld2450_parser_reset(&p);
+    int data = 0, ack = 0;
+    feed_all(&p, s, n, &data, &ack);
+    CHECK(data == 2);
+    CHECK(ack == 1);
+    char fw[24];
+    CHECK(ld2450_parse_fw(p.buf, p.flen, fw, sizeof(fw)));
+    CHECK(strcmp(fw, "V1.02.22062416") == 0);
+
+    // Ramka danych podana bajt po bajcie w dwoch kawalkach
+    ld2450_parser_reset(&p);
+    data = ack = 0;
+    feed_all(&p, FRAME, 17, &data, &ack);
+    feed_all(&p, FRAME + 17, 13, &data, &ack);
+    CHECK(data == 1);
+
+    // Zly ogon - ramka odrzucona
+    uint8_t bad[30];
+    memcpy(bad, FRAME, 30);
+    bad[29] = 0xCD;
+    ld2450_parser_reset(&p);
+    data = ack = 0;
+    feed_all(&p, bad, 30, &data, &ack);
+    CHECK(data == 0);
+
+    // Budowa komendy wejscia w tryb konfiguracji
+    static const uint8_t CFG_ON[14] = { 0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFF, 0x00, 0x01, 0x00,
+                                        0x04, 0x03, 0x02, 0x01 };
+    uint8_t cmd[24];
+    static const uint8_t one[2] = { 0x01, 0x00 };
+    CHECK(ld2450_build_cmd(cmd, LD2450_CMD_CONFIG_ON, one, 2) == 14);
+    CHECK(memcmp(cmd, CFG_ON, 14) == 0);
+}
+
+static void test_bme(void) {
+    // Kalibracja przykladowego egzemplarza - wartosci w typowym zakresie
+    uint8_t c[BME68X_COEFF_LEN] = {0};
+    c[0] = 0x2D; c[1] = 0x67;            // T2 = 26413
+    c[2] = 0x03;                         // T3
+    c[4] = 0x9E; c[5] = 0x8F;            // P1 = 36766
+    c[6] = 0x2C; c[7] = 0xD7;            // P2 = -10452
+    c[8] = 0x58;                         // P3 = 88
+    c[10] = 0x6A; c[11] = 0x1D;          // P4
+    c[12] = 0x22; c[13] = 0xFF;          // P5
+    c[14] = 0x2C; c[15] = 0x1E;          // P7, P6
+    c[18] = 0x5E; c[19] = 0xF1;          // P8
+    c[20] = 0x55; c[21] = 0xF0;          // P9
+    c[22] = 0x1E;                        // P10
+    c[23] = 0x3F; c[24] = 0x34; c[25] = 0x2C;   // H2 msb, H2 lsb|H1 lsb, H1 msb
+    c[26] = 0x00; c[27] = 0x2D; c[28] = 0x14; c[29] = 0x78; c[30] = 0x9C;
+    c[31] = 0x8C; c[32] = 0x66;          // T1 = 26252
+    c[33] = 0x9F; c[34] = 0xEB;          // GH2
+    c[35] = 0xEA; c[36] = 0x12;          // GH1, GH3
+    c[37] = 0x2E; c[39] = 0x16; c[41] = 0x10;
+    bme68x_calib_t cal;
+    bme68x_parse_calib(c, &cal);
+    CHECK(cal.par_t1 == 26252);
+    CHECK(cal.par_t2 == 26413);
+    CHECK(cal.par_h1 == ((0x2C << 4) | 0x4));
+    CHECK(cal.par_h2 == ((0x3F << 4) | 0x3));
+    CHECK(cal.res_heat_range == 1);
+    CHECK(cal.range_sw_err == 1);
+    float t = bme68x_temperature(&cal, 480000);
+    CHECK(t > -40 && t < 85);
+    float p = bme68x_pressure(&cal, 300000);
+    CHECK(p > 30000 && p < 110000);
+    float h = bme68x_humidity(&cal, 20000);
+    CHECK(h >= 0 && h <= 100);
+    CHECK(bme68x_gas_wait(150) == 0x65);      // 150 ms = 37 x 4
+    CHECK(bme68x_gas_wait(5000) == 0xFF);
+    float g = bme68x_gas_high(512, 0);
+    CHECK(g > 63.99e6f && g < 64.01e6f);      // 1e6 * 262144 / 4096 Ohm
+    printf("BME: T=%.2f C  P=%.1f hPa  H=%.1f %%  heater=%u\n",
+           t, p / 100, h, bme68x_heater_res(&cal, 320, 25));
+}
+
+int main(void) {
+    test_ld2450();
+    test_bme();
+    if (fails) { printf("%d bledow\n", fails); return 1; }
+    printf("OK - wszystkie testy przeszly\n");
+    return 0;
+}
