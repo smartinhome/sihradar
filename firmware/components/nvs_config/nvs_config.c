@@ -9,6 +9,7 @@ static sih_config_t g_cfg;
 static void set_defaults(sih_config_t *c) {
     memset(c, 0, sizeof(*c));
     strlcpy(c->ap_pass, "smartinhome", sizeof(c->ap_pass));
+    c->upd_check = true;
 }
 
 void nvs_config_init(void) {

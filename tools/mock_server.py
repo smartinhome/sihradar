@@ -19,7 +19,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 T0 = time.time()
 STATE = {"mode": "ap" if "--ap" in sys.argv else "sta", "ssid": "" if "--ap" in sys.argv else "Dom",
-         "test": "idle", "test_t": 0.0, "test_ssid": "", "test_pass": ""}
+         "test": "idle", "test_t": 0.0, "test_ssid": "", "test_pass": "", "upd_auto": True, "ota_t": 0.0}
 
 NETS = [
     {"ssid": "Dom", "rssi": -48, "auth": 3, "ch": 6},
@@ -52,12 +52,25 @@ def sensors():
 def status():
     ap = STATE["mode"] == "ap"
     return {
-        "fw": "0.1.0", "build": "Nov 16 2026 10:00:00", "idf": "v5.2.1", "uptime": int(time.time() - T0) + 3725,
+        "fw": "v0.1.0-beta1", "build": "Nov 16 2026 10:00:00", "idf": "v5.2.1",
+        "uptime": int(time.time() - T0) + 3725, "part": "ota_0",
         "heap": 214532, "heap_min": 198004, "mac": "40:4C:CA:12:1A:2B", "chip_temp": 41.6,
         "wifi": {"mode": STATE["mode"], "ssid": STATE["ssid"], "ip": "192.168.4.1" if ap else "192.168.1.57",
                  "rssi": 0 if ap else -52, "ch": 0 if ap else 6, "host": "sih-radar-1a2b",
                  "ap_ssid": "SIH-Radar-1A2B", "ap_clients": 1 if ap else 0},
+        "upd": {"auto": STATE["upd_auto"], "busy": False, "state": "none", "err": False, "latest": "", "new": False},
     }
+
+
+def ota_status():
+    # Udawane pobieranie: 8 s od klikniecia, potem sukces
+    if not STATE["ota_t"]:
+        return {"state": "idle", "progress": 0, "error": ""}
+    p = int((time.time() - STATE["ota_t"]) / 8 * 100)
+    if p >= 100:
+        STATE["ota_t"] = 0
+        return {"state": "success", "progress": 100, "error": ""}
+    return {"state": "downloading" if p < 5 else "writing", "progress": max(p, 0), "error": ""}
 
 
 def wifi_test():
@@ -95,11 +108,27 @@ class H(BaseHTTPRequestHandler):
             return self.send(200, NETS)
         if p == "/api/wifi/test":
             return self.send(200, wifi_test())
+        if p == "/api/ota/status":
+            return self.send(200, ota_status())
         self.send(404, {"ok": False, "error": "Nie ma takiej strony"})
 
     def do_POST(self):
         n = int(self.headers.get("Content-Length") or 0)
-        body = json.loads(self.rfile.read(n) or b"{}")
+        raw = self.rfile.read(n)
+        p = self.path.split("?")[0]
+        if p == "/api/ota/upload":
+            ok = raw[:1] == b"\xe9"   # magic obrazu ESP
+            return self.send(200 if ok else 400, {"ok": True} if ok else {"ok": False, "error": "To nie jest plik firmware"})
+        if p in ("/api/ota/github", "/api/ota/url"):
+            if STATE["mode"] != "sta":
+                return self.send(409, {"ok": False, "error": "Moduł nie ma dostępu do internetu - wgraj plik .bin"})
+            STATE["ota_t"] = time.time()
+            return self.send(200, {"ok": True})
+        body = json.loads(raw or b"{}")
+        if p == "/api/update":
+            if "auto" in body:
+                STATE["upd_auto"] = bool(body["auto"])
+            return self.send(200, {"ok": True})
         if self.path == "/api/wifi/connect":
             if not body.get("ssid"):
                 return self.send(400, {"ok": False, "error": "Podaj nazwę sieci."})

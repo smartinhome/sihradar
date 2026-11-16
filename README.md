@@ -49,6 +49,23 @@ dostępowego i co minutę sprawdza, czy sieć wróciła. Przytrzymanie przycisku
 | żółty, miga | trwa łączenie z siecią wybraną w panelu |
 | biały | przycisk BOOT trzymany (po 5 s kasowanie sieci) |
 
+## Aktualizacje
+
+Zakładka **Aktualizacje** w panelu działa jak w SIHOS17:
+- **Wersja oficjalna** to najnowsze wydanie bez bety (`vX.Y.Z`). Moduł sprawdza ją
+  sam co 12 h, a nowa wersja pokazuje plakietkę „nowa” w menu. Sam niczego nie instaluje.
+- **Wersja beta** to najnowsze wydanie `vX.Y.Z-betaN`. Listę wydań i zmian pobiera
+  przeglądarka z API GitHuba.
+- Można też podać **link do pliku .bin** (tylko https:// z github.com lub
+  www.smartinhome.pl).
+- Można też **wgrać plik `sih-radar.bin`** z komputera lub telefonu. To jedyna droga
+  w trybie punktu dostępowego, bo moduł nie ma wtedy internetu.
+
+Moduł przyjmuje tylko firmware SIH Radar dla ESP32-C6. Plik np. z SIHOS17 zostanie
+odrzucony. Pobieranie z GitHuba wznawia się po zerwaniu połączenia. Nowa wersja
+startuje „na próbę”: jeśli padnie przed pełnym uruchomieniem, bootloader wraca do
+poprzedniej.
+
 ## Budowanie
 
 Firmware buduje GitHub Actions (`.github/workflows/build.yml`, ESP-IDF v5.2.1,
@@ -85,3 +102,8 @@ przed kompilacją firmware.
 | POST | `/api/wifi/connect` | `{"ssid":"…","password":"…"}` |
 | GET | `/api/wifi/test` | wynik próby połączenia (tryb AP) |
 | POST | `/api/reboot` | restart |
+| POST | `/api/ota/github` | aktualizacja z GitHuba (`?channel=beta&tag=…`, bez parametrów = oficjalna) |
+| POST | `/api/ota/url` | `{"url":"https://…/sih-radar.bin"}` |
+| POST | `/api/ota/upload` | plik `sih-radar.bin` w treści zapytania |
+| GET | `/api/ota/status` | postęp aktualizacji |
+| POST | `/api/update` | `{"auto":true}` albo `{"action":"check"}` |

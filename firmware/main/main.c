@@ -5,6 +5,7 @@
 #include "led_status.h"
 #include "ld2450.h"
 #include "bme688.h"
+#include "ota_manager.h"
 
 #include "nvs_flash.h"
 #include "esp_log.h"
@@ -66,6 +67,7 @@ void app_main(void) {
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
     nvs_config_init();
+    ota_manager_init();
     led_status_init(LED_PIN);
 
     // Czujniki przed Wi-Fi: wifi_manager_init czeka do 15 s na siec domowa,
@@ -77,6 +79,11 @@ void app_main(void) {
     webserver_init();
 
     xTaskCreate(button_task, "button", 2560, NULL, 3, NULL);
+
+    // Doszlismy tu bez awarii: nowy firmware po aktualizacji jest sprawny.
+    // Restart wczesniej (np. blad w starcie Wi-Fi) = bootloader wraca do
+    // poprzedniej wersji.
+    ota_manager_mark_valid();
 
     ESP_LOGI(TAG, "System gotowy, wolna pamiec %u B", (unsigned)esp_get_free_heap_size());
 }

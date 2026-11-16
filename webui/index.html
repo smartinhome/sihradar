@@ -32,6 +32,34 @@ svg{flex-shrink:0}
 .theme-seg button{flex:1;padding:6px 4px;border:none;border-radius:9px;background:none;color:var(--mut);font-size:12px;font-weight:600;cursor:pointer}
 .theme-seg button.on{background:var(--card);color:var(--txt);box-shadow:0 1px 3px rgba(0,0,0,.2)}
 .scrim{display:none}
+.nav-badge{margin-left:auto;padding:1px 8px;border-radius:999px;background:var(--accent);color:#fff;font-size:11px;font-weight:600}
+.nav-badge:empty{display:none}
+/* aktualizacje */
+.ota-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.ota-tile{display:flex;flex-direction:column;gap:10px;background:var(--tile);border-radius:18px;padding:16px}
+.ota-th{display:flex;align-items:flex-start;gap:10px}
+.ota-th>div{flex:1;min-width:0}
+.ota-tt{font-weight:600;font-size:15px}
+.ota-tt small{font-weight:400;color:var(--mut)}
+.ota-ds{font-size:12px;color:var(--mut);margin-top:2px}
+.ota-chip{flex-shrink:0;padding:3px 10px;border-radius:999px;background:var(--track);color:var(--chiptxt);font-size:12px;font-weight:500;white-space:nowrap}
+.ota-chip.new{background:var(--accent);color:#fff}
+.ota-chip.ok{background:var(--oksoft);color:var(--oktxt)}
+.ota-row{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--mut)}
+.ota-row b{color:var(--txt);font-variant-numeric:tabular-nums}
+.ota-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--chiptxt)}
+.ota-foot label{display:inline-flex;align-items:center;gap:8px;cursor:pointer;flex:1}
+.ota-foot input{accent-color:var(--accent)}
+.mini{height:32px;padding:0 12px;border:none;border-radius:10px;background:var(--track);color:var(--txt);font-size:12px;font-weight:600;cursor:pointer}
+.chg{font-size:12px;color:var(--mut);border-top:1px solid var(--track);padding-top:10px}
+.chg b{display:block;color:var(--txt);margin-bottom:4px}
+.chg ul{margin:0;padding-left:18px;max-height:150px;overflow:auto}
+.chg li{margin-bottom:3px}
+.pbar{height:6px;border-radius:3px;background:var(--track);overflow:hidden;margin-top:14px}
+.pbar i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.src{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:16px;padding-top:16px;border-top:1px solid var(--tile)}
+.src .field{flex:1 1 280px}
+@media (max-width:900px){.ota-tiles{grid-template-columns:minmax(0,1fr)}}
 /* --- czesc glowna --- */
 .main{margin-left:268px;padding:12px 12px 32px 0;min-height:100vh}
 .topbar{position:sticky;top:12px;z-index:20;display:flex;align-items:center;gap:12px;min-height:64px;padding:10px 12px 10px 20px;background:var(--card);border:1px solid var(--bd);border-radius:20px;margin-bottom:16px}
@@ -139,6 +167,8 @@ canvas{display:block;width:100%}
  .tb-chips .chip span.lbl{display:none}
  .grid{grid-template-columns:minmax(0,1fr)}
  .card{padding:16px;border-radius:20px}
+ .card-h{flex-wrap:wrap}
+ .card-h .ch-t{min-width:60%}
  .conn{order:-1}
 }
 @media (max-width:420px){.tile b{font-size:21px}.frow .btn{width:100%}}
@@ -153,6 +183,7 @@ canvas{display:block;width:100%}
   <button class="nav-item" data-p="radar" onclick="go('radar')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21 4.5 7.5A9 9 0 0 1 19.5 7.5z"/><path d="M12 21 8 13.5a4.5 4.5 0 0 1 8 0z"/></svg>Radar</button>
   <div class="nav-sec">USTAWIENIA</div>
   <button class="nav-item" data-p="siec" onclick="go('siec')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M2 9a14 14 0 0 1 20 0"/><circle cx="12" cy="19.5" r="1"/></svg>Sieć Wi‑Fi</button>
+  <button class="nav-item" data-p="akt" onclick="go('akt')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Aktualizacje<span class="nav-badge" id="nav-upd"></span></button>
   <button class="nav-item" data-p="system" onclick="go('system')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg>System</button>
   <div class="sidebar-foot">
     <div class="theme-seg" role="group" aria-label="Motyw"><button data-th="auto" onclick="setTheme('auto')">Auto</button><button data-th="dark" onclick="setTheme('dark')">Ciemny</button><button data-th="light" onclick="setTheme('light')">Jasny</button></div>
@@ -258,6 +289,42 @@ canvas{display:block;width:100%}
     </div>
   </section>
 
+  <!-- ===================== AKTUALIZACJE ===================== -->
+  <section class="page" id="p-akt">
+    <div class="grid">
+      <div class="card full">
+        <div class="card-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><div class="ch-t">Aktualizacja firmware<small>z GitHuba, z adresu albo z pliku</small></div><span class="chip">Zainstalowana <b id="u-inst">--</b></span></div>
+        <div class="ota-tiles">
+          <div class="ota-tile">
+            <div class="ota-th"><div><div class="ota-tt">Wersja oficjalna <small>(zalecane)</small></div><div class="ota-ds">Stabilne, sprawdzone wydania.</div></div><span class="ota-chip" id="u-of-chip">jeszcze nie sprawdzono</span></div>
+            <div class="ota-row"><span>Najnowsza oficjalna</span><b id="u-of-last">–</b></div>
+            <button type="button" class="btn primary" id="u-of-btn" onclick="otaGithub('stable')">Aktualizuj do oficjalnej</button>
+            <div class="ota-foot">
+              <label title="Moduł tylko sprawdza i informuje – niczego nie instaluje sam. Wersje beta są pomijane."><input type="checkbox" id="u-auto" onchange="updAuto()">Sprawdzaj automatycznie co 12 h</label>
+              <button type="button" class="mini" id="u-chk" onclick="updCheck()">Sprawdź teraz</button>
+            </div>
+            <div class="chg" id="u-of-chg" hidden></div>
+          </div>
+          <div class="ota-tile">
+            <div class="ota-th"><div><div class="ota-tt">Wersja beta</div><div class="ota-ds">Najnowsze funkcje, może zawierać błędy.</div></div><span class="ota-chip" id="u-be-chip">sprawdzanie…</span></div>
+            <div class="ota-row"><span>Najnowsza beta</span><b id="u-be-last">–</b></div>
+            <button type="button" class="btn" id="u-be-btn" onclick="otaGithub('beta')">Aktualizuj do beta</button>
+            <div class="chg" id="u-be-chg" hidden></div>
+          </div>
+        </div>
+        <div class="warnbox" id="u-ap">Moduł pracuje jako punkt dostępowy i nie ma dostępu do internetu – pobranie z GitHuba się nie uda. Użyj przycisku <b>Wgraj plik .bin</b> poniżej (plik <b>sih-radar.bin</b> z wydania na GitHubie).</div>
+        <div class="pbar" id="u-pbar" hidden><i id="u-bar"></i></div>
+        <div class="msg" id="u-msg" hidden></div>
+        <div class="src">
+          <div class="field"><label for="u-url">Inne źródło – link do pliku .bin <span style="font-weight:400">(github.com, www.smartinhome.pl)</span></label><input class="input" id="u-url" placeholder="https://github.com/smartinhome/sihradar/releases/download/…/sih-radar.bin" autocapitalize="none" spellcheck="false"></div>
+          <button type="button" class="btn" onclick="otaUrl()">Pobierz i zainstaluj</button>
+          <button type="button" class="btn primary" onclick="$('u-file').click()" title="Ręczne wgranie bez internetu – plik sih-radar.bin pobrany wcześniej">Wgraj plik .bin…</button>
+          <input type="file" id="u-file" accept=".bin" hidden onchange="otaUpload(this)">
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ===================== SYSTEM ===================== -->
   <section class="page" id="p-system">
     <div class="grid">
@@ -291,7 +358,7 @@ canvas{display:block;width:100%}
 <script>
 'use strict';
 var $ = function(id){ return document.getElementById(id); };
-var PAGES = { pulpit:['Podgląd','Pulpit'], radar:['Podgląd','Radar'], siec:['Ustawienia','Sieć Wi‑Fi'], system:['Ustawienia','System'] };
+var PAGES = { pulpit:['Podgląd','Pulpit'], radar:['Podgląd','Radar'], siec:['Ustawienia','Sieć Wi‑Fi'], akt:['Ustawienia','Aktualizacje'], system:['Ustawienia','System'] };
 var COLORS = ['#3d8bff', '#17c964', '#f5a524'];
 var st = null, sens = null, opt = { trail:true, flip:false }, trails = {}, ws = null, wsOk = false, pollT = null;
 
@@ -319,6 +386,7 @@ function go(p){
   navOpen(false);
   if (p === 'radar') setTimeout(drawRadar, 0);
   if (p === 'siec' && !$('nets').children.length && st && st.wifi.mode === 'ap') scan();
+  if (p === 'akt') ghVersions();
 }
 window.addEventListener('hashchange', function(){ go(location.hash.slice(1)); });
 
@@ -356,6 +424,7 @@ async function loadStatus(){
   $('s-heapmin').textContent = 'najmniej od startu: ' + nf(st.heap_min / 1024, 1) + ' KB';
   $('s-temp').textContent = st.chip_temp > -100 ? nf(st.chip_temp, 1) + ' °C' : '--';
   $('s-mac').textContent = st.mac;
+  updRender();
 }
 function setNet(cls, txt){ $('tb-net').className = 'dot ' + cls; $('tb-net-t').textContent = txt; }
 
@@ -591,6 +660,167 @@ async function connect(){
   }
   wmsg('err', 'Brak odpowiedzi modułu. Jeśli dioda świeci na zielono, moduł jest już w sieci domowej – znajdziesz go pod http://' + esc(st ? st.wifi.host : 'sih-radar') + '.local');
   btn.disabled = false;
+}
+
+// --- aktualizacje (jak w SIHOS17) ---
+// Listę wydań pobiera przeglądarka wprost z API GitHuba (ma internet także
+// wtedy, gdy moduł ma tylko sieć lokalną); moduł sam sprawdza wersję oficjalną co 12 h.
+var GH = 'https://api.github.com/repos/smartinhome/sihradar';
+var rel = { checked:false, err:'', stable:null, beta:null }, otaT = null;
+function verParse(s){
+  var m = /^v?(\d+)\.(\d+)\.(\d+)(?:-beta(\d+))?/i.exec(s || '');
+  return m ? [+m[1], +m[2], +m[3], m[4] === undefined ? Infinity : +m[4]] : null;
+}
+function verCmp(a, b){
+  var x = verParse(a), y = verParse(b);
+  if (!x || !y) return (x ? 1 : 0) - (y ? 1 : 0);
+  for (var i = 0; i < 4; i++) if (x[i] !== y[i]) return x[i] < y[i] ? -1 : 1;
+  return 0;
+}
+function sameVer(tag, fw){ return !!tag && !!fw && tag.replace(/^v/, '') === fw.replace(/^v/, ''); }
+async function ghVersions(force){
+  if (rel.checked && !force) { updRender(); return; }
+  try {
+    var a = await (await fetch(GH + '/releases?per_page=30')).json();
+    if (!Array.isArray(a)) throw new Error(a && /rate limit/i.test(a.message || '') ? 'Limit zapytań GitHub – sprawdź za godzinę' : 'Brak dostępu do GitHuba');
+    a = a.filter(function(r){ return !r.draft; });
+    var s = null, b = null;
+    a.forEach(function(r, i){
+      var t = r.tag_name || '', isB = /beta/i.test(t);
+      var x = { tag:t, body:r.body || '', prev:(a[i + 1] || {}).tag_name || '' };
+      if (isB) { if (!b || verCmp(t, b.tag) > 0) b = x; }
+      else if (!r.prerelease) { if (!s || verCmp(t, s.tag) > 0) s = x; }
+    });
+    rel = { checked:true, err:'', stable:s, beta:b };
+    changes(s, 'u-of-chg'); changes(b, 'u-be-chg');
+  } catch(e) {
+    rel = { checked:true, err:e.message || 'Brak dostępu do GitHuba', stable:null, beta:null };
+  }
+  updRender();
+}
+async function changes(r, id){
+  var el = $(id);
+  if (!r) { el.hidden = true; return; }
+  var lines = [];
+  if (r.prev) {
+    try {
+      var c = await (await fetch(GH + '/compare/' + encodeURIComponent(r.prev) + '...' + encodeURIComponent(r.tag))).json();
+      (c.commits || []).slice().reverse().forEach(function(x){
+        var m = ((x.commit && x.commit.message) || '').split('\n')[0].trim();
+        if (m && m.indexOf('Merge ') !== 0) lines.push(m);
+      });
+    } catch(e){}
+  }
+  if (!lines.length) lines = r.body.split(/\r?\n/).map(function(l){ return l.replace(/^\s*[-*#]+\s*/, '').trim(); }).filter(Boolean);
+  el.innerHTML = '<b>Lista zmian (' + esc(r.tag) + ')</b>' + (lines.length
+    ? '<ul>' + lines.slice(0, 12).map(function(l){ return '<li>' + esc(l) + '</li>'; }).join('') + '</ul>'
+    : 'Brak opisu zmian dla tego wydania.');
+  el.hidden = false;
+}
+function chip(id, cls, txt){ var c = $(id); c.className = 'ota-chip ' + cls; c.textContent = txt; }
+function updRender(){
+  if (!st) return;
+  var fw = st.fw, u = st.upd || {}, ap = st.wifi.mode !== 'sta';
+  $('u-inst').textContent = fw;
+  $('u-auto').checked = !!u.auto;
+  $('u-ap').classList.toggle('on', ap);
+  $('u-chk').disabled = !!u.busy || ap;
+  $('u-chk').textContent = u.busy ? 'Sprawdzam…' : 'Sprawdź teraz';
+  // oficjalna: lista z przeglądarki, a gdy jej brak - wynik sprawdzenia przez moduł
+  var stag = rel.stable ? rel.stable.tag : (u.state === 'ok' ? u.latest : '');
+  var none = rel.checked && !rel.err ? !rel.stable : u.state === 'none';
+  $('u-of-last').textContent = stag || (none ? 'brak wydania' : '–');
+  if (stag && sameVer(stag, fw)) chip('u-of-chip', 'ok', 'masz najnowszą');
+  else if (stag && verCmp(stag, fw) > 0) chip('u-of-chip', 'new', 'dostępna ' + stag);
+  else if (stag) chip('u-of-chip', '', 'zainstalowana nowsza');
+  else if (none) chip('u-of-chip', '', 'brak wydania');
+  else chip('u-of-chip', '', u.err ? 'nie udało się sprawdzić' : 'jeszcze nie sprawdzono');
+  var btag = rel.beta ? rel.beta.tag : '';
+  $('u-be-last').textContent = btag || (rel.checked && !rel.err ? 'brak wydania' : '–');
+  if (!rel.checked) chip('u-be-chip', '', 'sprawdzanie…');
+  else if (rel.err) chip('u-be-chip', '', ap ? 'brak internetu' : rel.err);
+  else if (!btag) chip('u-be-chip', '', 'brak wydania');
+  else if (sameVer(btag, fw)) chip('u-be-chip', 'ok', 'masz najnowszą');
+  else chip('u-be-chip', 'new', 'dostępna ' + btag);
+  var busy = !!otaT;
+  $('u-of-btn').disabled = busy || ap || none;
+  $('u-be-btn').disabled = busy || ap || (rel.checked && !rel.err && !btag);
+  $('nav-upd').textContent = (stag && verCmp(stag, fw) > 0) ? 'nowa' : '';
+}
+async function updAuto(){
+  try { await fetch('/api/update', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ auto:$('u-auto').checked }) }); } catch(e){}
+  loadStatus();
+}
+async function updCheck(){
+  try { await fetch('/api/update', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ action:'check' }) }); } catch(e){}
+  ghVersions(true);
+  setTimeout(loadStatus, 600);
+  setTimeout(loadStatus, 6000);
+}
+function umsg(cls, html){ var m = $('u-msg'); m.hidden = false; m.className = 'msg ' + cls; m.innerHTML = html; }
+function ubar(p){ $('u-pbar').hidden = p === null; $('u-bar').style.width = (p || 0) + '%'; }
+async function otaStart(url, opts, label){
+  if (!confirm(label + '\n\nModuł pobierze firmware i uruchomi się ponownie (ok. 1 min). Kontynuować?')) return;
+  umsg('', '<span class="spin"></span>Rozpoczynam…'); ubar(0);
+  try {
+    var r = await (await fetch(url, opts)).json();
+    if (!r.ok) { umsg('err', esc(r.error || 'Błąd')); ubar(null); return; }
+  } catch(e) { umsg('err', 'Brak odpowiedzi modułu'); ubar(null); return; }
+  otaPoll();
+}
+function otaGithub(ch){
+  var tag = ch === 'beta' && rel.beta ? rel.beta.tag : '';
+  var q = ch === 'beta' ? '?channel=beta' + (tag ? '&tag=' + encodeURIComponent(tag) : '') : '';
+  otaStart('/api/ota/github' + q, { method:'POST' },
+    ch === 'beta' ? 'Aktualizacja do wersji beta ' + (tag || '') : 'Aktualizacja do wersji oficjalnej ' + (rel.stable ? rel.stable.tag : ''));
+}
+function otaUrl(){
+  var u = $('u-url').value.trim();
+  if (!/^https:\/\//.test(u)) { umsg('err', 'Podaj adres zaczynający się od https://'); return; }
+  otaStart('/api/ota/url', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ url:u }) }, 'Aktualizacja z adresu:\n' + u);
+}
+function otaPoll(){
+  clearInterval(otaT); updRender();
+  otaT = setInterval(async function(){
+    var s;
+    try { s = await (await fetch('/api/ota/status', { cache:'no-store' })).json(); } catch(e) { return; }
+    if (s.state === 'downloading' || s.state === 'writing') {
+      umsg('', '<span class="spin"></span>' + (s.state === 'downloading' && !s.progress ? 'Łączę z serwerem…' : 'Pobieram i zapisuję firmware… ' + s.progress + '%'));
+      ubar(s.progress); return;
+    }
+    clearInterval(otaT); otaT = null;
+    if (s.state === 'success') { ubar(100); afterUpdate(); }
+    else if (s.state === 'uptodate') { ubar(null); umsg('ok', esc(s.error || 'Masz już tę wersję')); }
+    else { ubar(null); umsg('err', 'Aktualizacja nieudana: ' + esc(s.error || 'nieznany błąd')); }
+    updRender();
+  }, 1000);
+}
+function afterUpdate(){
+  umsg('ok', '<span class="spin"></span>Firmware zapisany. Moduł uruchamia się ponownie…');
+  var t0 = Date.now();
+  setTimeout(function wait(){
+    fetch('/api/status', { cache:'no-store' }).then(function(r){ return r.json(); }).then(function(){ location.reload(); })
+      .catch(function(){ if (Date.now() - t0 < 90000) setTimeout(wait, 2000); else umsg('err', 'Moduł nie odpowiada po restarcie. Odśwież stronę za chwilę.'); });
+  }, 8000);
+}
+function otaUpload(inp){
+  var f = inp.files && inp.files[0];
+  inp.value = '';
+  if (!f) return;
+  if (!/\.bin$/i.test(f.name)) { umsg('err', 'Wybierz plik .bin (sih-radar.bin z wydania na GitHubie).'); return; }
+  if (/full/i.test(f.name)) { umsg('err', 'To pełny obraz do wgrania przez USB. Przez panel wgraj plik <b>sih-radar.bin</b>.'); return; }
+  if (!confirm('Wgrać plik ' + f.name + ' (' + nf(f.size / 1024, 0) + ' KB)? Moduł uruchomi się ponownie.')) return;
+  var x = new XMLHttpRequest();
+  x.open('POST', '/api/ota/upload');
+  x.upload.onprogress = function(e){ if (e.lengthComputable) { ubar(Math.round(e.loaded * 100 / e.total)); umsg('', '<span class="spin"></span>Wgrywam plik… ' + Math.round(e.loaded * 100 / e.total) + '%'); } };
+  x.onload = function(){
+    var r = {}; try { r = JSON.parse(x.responseText); } catch(e){}
+    if (x.status === 200 && r.ok) { ubar(100); afterUpdate(); }
+    else { ubar(null); umsg('err', 'Wgrywanie nieudane: ' + esc(r.error || ('HTTP ' + x.status))); }
+  };
+  x.onerror = function(){ ubar(null); umsg('err', 'Przerwano połączenie z modułem.'); };
+  ubar(0); umsg('', '<span class="spin"></span>Wgrywam plik…');
+  x.send(f);
 }
 
 // --- serwis ---

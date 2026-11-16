@@ -3,6 +3,8 @@
 #include "nvs_config.h"
 #include "ld2450.h"
 #include "bme688.h"
+#include "ota_manager.h"
+#include "esp_ota_ops.h"
 #include "esp_app_desc.h"
 #include "esp_system.h"
 #include "esp_timer.h"
@@ -123,18 +125,24 @@ static esp_err_t h_status(httpd_req_t *req) {
                        st == WIFI_STATE_CONNECTING ? "connecting" : "off";
     char ssid[72];
     json_esc(ssid, sizeof(ssid), cfg->wifi_ssid);
-    char buf[700];
-    snprintf(buf, sizeof(buf),
+    char ver[72];
+    json_esc(ver, sizeof(ver), app->version);
+    char buf[900];
+    int n = snprintf(buf, sizeof(buf),
         "{\"fw\":\"%s\",\"build\":\"%s %s\",\"idf\":\"%s\",\"uptime\":%lld,"
         "\"heap\":%lu,\"heap_min\":%lu,\"mac\":\"%02X:%02X:%02X:%02X:%02X:%02X\",\"chip_temp\":%.1f,"
+        "\"part\":\"%s\","
         "\"wifi\":{\"mode\":\"%s\",\"ssid\":\"%s\",\"ip\":\"%s\",\"rssi\":%d,\"ch\":%d,"
-        "\"host\":\"%s\",\"ap_ssid\":\"%s\",\"ap_clients\":%d}}",
-        app->version, app->date, app->time, app->idf_ver,
+        "\"host\":\"%s\",\"ap_ssid\":\"%s\",\"ap_clients\":%d},",
+        ver, app->date, app->time, app->idf_ver,
         (long long)(esp_timer_get_time() / 1000000),
         (unsigned long)esp_get_free_heap_size(), (unsigned long)esp_get_minimum_free_heap_size(),
         mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], chip_temp(),
+        ota_get_partition_label(),
         mode, ssid, ip, wifi_manager_get_rssi(), wifi_manager_get_channel(),
         wifi_manager_hostname(), wifi_manager_ap_ssid(), wifi_manager_ap_clients());
+    n += ota_update_json(buf + n, sizeof(buf) - n);
+    snprintf(buf + n, sizeof(buf) - n, "}");
     return send_json(req, buf);
 }
 
@@ -175,6 +183,140 @@ static esp_err_t h_wifi_test(httpd_req_t *req) {
     char buf[256];
     wifi_manager_test_json(buf, sizeof(buf));
     return send_json(req, buf);
+}
+
+// --------------------------------------------------------------------------
+// Aktualizacje (jak w SIHOS17)
+// --------------------------------------------------------------------------
+
+// ?channel=beta&tag=v0.1.0-beta3 albo bez parametrow = kanal oficjalny
+static esp_err_t h_ota_github(httpd_req_t *req) {
+    if (wifi_manager_get_state() != WIFI_STATE_CONNECTED)
+        return send_err(req, "409 Conflict", "Moduł nie ma dostępu do internetu - wgraj plik .bin");
+    if (ota_busy()) return send_err(req, "409 Conflict", "Aktualizacja już trwa");
+    bool beta = false;
+    char query[128], tag[48] = {0};
+    if (httpd_req_get_url_query_str(req, query, sizeof(query)) == ESP_OK) {
+        char val[16];
+        if (httpd_query_key_value(query, "channel", val, sizeof(val)) == ESP_OK)
+            beta = (strcmp(val, "beta") == 0);
+        if (httpd_query_key_value(query, "tag", tag, sizeof(tag)) != ESP_OK) tag[0] = 0;
+    }
+    ota_start_from_github(beta, tag);
+    return send_json(req, "{\"ok\":true}");
+}
+
+static esp_err_t h_ota_url(httpd_req_t *req) {
+    cJSON *j = read_json(req);
+    if (!j) return send_err(req, "400 Bad Request", "Nieprawidłowe dane");
+    const cJSON *u = cJSON_GetObjectItem(j, "url");
+    char url[480] = {0};
+    if (cJSON_IsString(u)) strlcpy(url, u->valuestring, sizeof(url));
+    cJSON_Delete(j);
+    if (!ota_url_allowed(url))
+        return send_err(req, "400 Bad Request",
+                        "Dozwolone tylko adresy https:// z github.com lub www.smartinhome.pl");
+    if (wifi_manager_get_state() != WIFI_STATE_CONNECTED)
+        return send_err(req, "409 Conflict", "Moduł nie ma dostępu do internetu - wgraj plik .bin");
+    if (ota_busy()) return send_err(req, "409 Conflict", "Aktualizacja już trwa");
+    ota_start_from_url(url);
+    return send_json(req, "{\"ok\":true}");
+}
+
+static void restart_task(void *arg) {
+    vTaskDelay(pdMS_TO_TICKS((uint32_t)(uintptr_t)arg));
+    esp_restart();
+}
+
+// Plik .bin z przegladarki zapisywany STRUMIENIOWO wprost do partycji OTA.
+// Jedyna droga aktualizacji w trybie AP, gdzie modul nie ma internetu.
+static esp_err_t h_ota_upload(httpd_req_t *req) {
+    const esp_partition_t *part = esp_ota_get_next_update_partition(NULL);
+    size_t len = req->content_len;
+    if (!part) return send_err(req, "500 Internal Server Error", "Brak partycji OTA");
+    if (len < ota_image_header_len() || len > part->size)
+        return send_err(req, "400 Bad Request", "Nieprawidłowy rozmiar pliku");
+    if (ota_busy()) return send_err(req, "409 Conflict", "Aktualizacja już trwa");
+
+    const int CH = 4096;
+    char *buf = malloc(CH);
+    if (!buf) return send_err(req, "500 Internal Server Error", "Brak pamięci");
+    ota_set_upload_busy(true);
+
+    esp_ota_handle_t h = 0;
+    bool open = false;
+    const char *err = NULL;
+    size_t got = 0;
+    int fill = 0;
+    int hdr = (int)ota_image_header_len();
+    while (got < len) {
+        int want = CH - fill;
+        if ((size_t)want > len - got) want = (int)(len - got);
+        int r = httpd_req_recv(req, buf + fill, want);
+        if (r == HTTPD_SOCK_ERR_TIMEOUT) continue;
+        if (r <= 0) { err = "Przerwano przesyłanie pliku"; break; }
+        got += r;
+        fill += r;
+        if (!open) {
+            if (fill < hdr && got < len) continue;   // czekamy na caly naglowek
+            err = ota_check_image_header((const uint8_t *)buf, fill);
+            if (err) break;
+            if (esp_ota_begin(part, OTA_WITH_SEQUENTIAL_WRITES, &h) != ESP_OK) {
+                err = "Nie udało się rozpocząć zapisu";
+                break;
+            }
+            open = true;
+        }
+        if (esp_ota_write(h, buf, fill) != ESP_OK) { err = "Błąd zapisu do pamięci flash"; break; }
+        fill = 0;
+    }
+    free(buf);
+
+    if (!err && open && esp_ota_end(h) != ESP_OK) { err = "Plik uszkodzony (zła suma kontrolna)"; open = false; }
+    else if (err && open) esp_ota_abort(h);
+    if (!err && esp_ota_set_boot_partition(part) != ESP_OK) err = "Nie można ustawić nowej partycji";
+    ota_set_upload_busy(false);
+    if (err) {
+        ESP_LOGW(TAG, "Wgrywanie pliku: %s", err);
+        return send_err(req, "400 Bad Request", err);
+    }
+    ESP_LOGI(TAG, "Wgrano plik %u B do %s - restart", (unsigned)got, part->label);
+    send_json(req, "{\"ok\":true}");
+    xTaskCreate(restart_task, "restart", 2048, (void *)(uintptr_t)1000, 5, NULL);
+    return ESP_OK;
+}
+
+static esp_err_t h_ota_status(httpd_req_t *req) {
+    static const char *states[] = { "idle", "downloading", "writing", "success", "failed", "uptodate" };
+    ota_status_t st = ota_get_status();
+    char esc[96], buf[200];
+    json_esc(esc, sizeof(esc), st.error);
+    snprintf(buf, sizeof(buf), "{\"state\":\"%s\",\"progress\":%d,\"error\":\"%s\"}",
+             states[st.state], st.progress_pct, esc);
+    return send_json(req, buf);
+}
+
+// {"auto":true|false} - przelacznik sprawdzania, {"action":"check"} - sprawdz teraz
+static esp_err_t h_update(httpd_req_t *req) {
+    cJSON *j = read_json(req);
+    if (!j) return send_err(req, "400 Bad Request", "Nieprawidłowe dane");
+    const cJSON *a = cJSON_GetObjectItem(j, "action");
+    const cJSON *au = cJSON_GetObjectItem(j, "auto");
+    esp_err_t r;
+    if (cJSON_IsString(a) && strcmp(a->valuestring, "check") == 0) {
+        ota_update_check_now();
+        r = send_json(req, "{\"ok\":true}");
+    } else if (cJSON_IsBool(au)) {
+        sih_config_t cfg = nvs_config_get();
+        cfg.upd_check = cJSON_IsTrue(au);
+        nvs_config_save(&cfg);
+        ota_update_set_auto(cfg.upd_check);
+        r = send_json(req, "{\"ok\":true}");
+    } else {
+        r = send_err(req, "400 Bad Request", "Nieznane polecenie");
+    }
+    cJSON_Delete(j);
+    return r;
 }
 
 static void reboot_task(void *arg) {
@@ -221,8 +363,14 @@ typedef struct {
     char   data[];
 } ws_job_t;
 
+// Zadania czekajace w kolejce serwera. Gdy serwer jest zajety (np. przyjmuje
+// plik aktualizacji), nie dokladamy kolejnych - kazde to kopia JSON-a w RAM.
+static volatile int s_ws_pending = 0;
+#define WS_MAX_PENDING 6
+
 static void ws_send_work(void *arg) {
     ws_job_t *j = (ws_job_t *)arg;
+    s_ws_pending--;
     httpd_ws_frame_t f = {
         .final = true,
         .type = HTTPD_WS_TYPE_TEXT,
@@ -241,19 +389,22 @@ static void ws_task(void *arg) {
     if (!buf) { vTaskDelete(NULL); return; }
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(WS_PERIOD_MS));
+        if (ota_busy()) continue;   // pamiec i siec dla aktualizacji
         int fds[CONFIG_LWIP_MAX_SOCKETS];
         size_t n = CONFIG_LWIP_MAX_SOCKETS;
         if (httpd_get_client_list(s_srv, &n, fds) != ESP_OK) continue;
         int len = -1;
         for (size_t i = 0; i < n; i++) {
             if (httpd_ws_get_fd_info(s_srv, fds[i]) != HTTPD_WS_CLIENT_WEBSOCKET) continue;
+            if (s_ws_pending >= WS_MAX_PENDING) break;
             if (len < 0) len = sensors_json(buf, JSON_CAP);
             ws_job_t *j = malloc(sizeof(ws_job_t) + len + 1);
             if (!j) break;
             j->fd = fds[i];
             j->len = len;
             memcpy(j->data, buf, len + 1);
-            if (httpd_queue_work(s_srv, ws_send_work, j) != ESP_OK) free(j);
+            s_ws_pending++;
+            if (httpd_queue_work(s_srv, ws_send_work, j) != ESP_OK) { s_ws_pending--; free(j); }
         }
     }
 }
@@ -285,6 +436,11 @@ void api_register_handlers(httpd_handle_t server) {
         { .uri = "/api/wifi/connect", .method = HTTP_POST, .handler = h_wifi_connect },
         { .uri = "/api/wifi/test",    .method = HTTP_GET,  .handler = h_wifi_test },
         { .uri = "/api/reboot",       .method = HTTP_POST, .handler = h_reboot },
+        { .uri = "/api/ota/github",   .method = HTTP_POST, .handler = h_ota_github },
+        { .uri = "/api/ota/url",      .method = HTTP_POST, .handler = h_ota_url },
+        { .uri = "/api/ota/upload",   .method = HTTP_POST, .handler = h_ota_upload },
+        { .uri = "/api/ota/status",   .method = HTTP_GET,  .handler = h_ota_status },
+        { .uri = "/api/update",       .method = HTTP_POST, .handler = h_update },
         { .uri = "/favicon.ico",      .method = HTTP_GET,  .handler = h_favicon },
         { .uri = "/ws",               .method = HTTP_GET,  .handler = h_ws, .is_websocket = true },
         // Na koncu: dopasowanie do wszystkiego (portal / 404)

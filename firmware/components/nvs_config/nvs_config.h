@@ -10,6 +10,7 @@ typedef struct {
     char wifi_ssid[33];
     char wifi_pass[65];
     char ap_pass[32];      // haslo punktu dostepowego SIH-Radar-XXXX
+    bool upd_check;        // sprawdzaj nowa wersje oficjalna co 12 h
 } sih_config_t;
 
 void                nvs_config_init(void);

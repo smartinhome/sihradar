@@ -23,5 +23,16 @@ CONFIG_LOG_DEFAULT_LEVEL_INFO=y
 # Kod krotszy i szybszy niz -Og; asercje zostaja
 CONFIG_COMPILER_OPTIMIZATION_SIZE=y
 
+# Aktualizacje OTA: nowy obraz startuje "na probe" - jesli padnie przed pelnym
+# startem (ota_manager_mark_valid), bootloader wraca do poprzedniej wersji
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
+# Certyfikaty do HTTPS (GitHub) - pelny zestaw CA
+CONFIG_MBEDTLS_CERTIFICATE_BUNDLE=y
+CONFIG_MBEDTLS_CERTIFICATE_BUNDLE_DEFAULT_FULL=y
+# Bufory TLS tylko na czas polaczenia (jak w SIHOS17)
+CONFIG_MBEDTLS_DYNAMIC_BUFFER=y
+CONFIG_MBEDTLS_DYNAMIC_FREE_CONFIG_DATA=y
+CONFIG_MBEDTLS_DYNAMIC_FREE_CA_CERT=y
+
 # Nieuzywane: WPA2-Enterprise
 CONFIG_ESP_WIFI_ENTERPRISE_SUPPORT=n
