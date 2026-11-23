@@ -76,7 +76,7 @@ static void task(void *arg) {
         ld2450_get(&d);
         pz_raw_t raw[PZ_TARGETS];
         for (int i = 0; i < PZ_TARGETS; i++)
-            raw[i] = (pz_raw_t){ d.t[i].valid, d.t[i].x_mm, d.t[i].y_mm, d.t[i].speed_cms };
+            raw[i] = (pz_raw_t){ d.t[i].valid, d.t[i].x_mm, d.t[i].y_mm, d.t[i].speed_cms, d.t[i].res_mm };
         uint32_t now = (uint32_t)(esp_timer_get_time() / 1000);
         lock();
         sync_room();       // plan moze sie zmienic w panelu

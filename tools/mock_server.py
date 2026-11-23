@@ -97,7 +97,8 @@ def sensors():
         "radar": {"online": True, "fw": "V2.04.23101915", "fps": 10, "count": len(targets),
                   "frames": int(t * 10), "errors": 3, "baud": 256000, "scan": False, "rx": int(t * 300),
                   "raw": "AA FF 03 00 0E 03 B1 86 10 00 40 01 00 00 00 00 00 00 00 00 00 00 00 00",
-                  "targets": targets},
+                  "targets": [dict(t, m=int(abs(t["v"]) >= 15), h=0) for t in targets],
+                  "rt": [[t["x"] + random.randint(-150, 150), t["y"] + random.randint(-150, 150)] for t in targets]},
         "bme": {"online": True, "chip": "BME688", "addr": 119, "t": 22.4 + math.sin(t / 60) * 0.3,
                 "h": 46.2, "p": 1012.8, "gas": 84.3 + t / 30, "gas_ok": t > 6, "n": int(t / 3)},
     }

@@ -14,10 +14,14 @@
 //   wyjscia, uznajemy ze nadal tam jest - do czasu az ruszy sie albo minie
 //   limit pamieci. Zniknal przy scianie / na granicy zasiegu w ruchu albo
 //   pojawil sie obok poza strefa - wyszedl.
-// - filtry przed tym wszystkim: wygladzanie pozycji (drgania 10-20 cm),
-//   przytrzymanie celu zgubionego na 1-2 ramki, potwierdzanie nowego celu
-//   (pojedyncze ramki z odbic nie wlaczaja obecnosci) i histereza krawedzi
-//   stref (osoba na granicy nie "mruga").
+// - filtry przed tym wszystkim:
+//   - wlasne numerowanie osob: radar potrafi zamienic numery (sloty) miedzy
+//     osobami, wiec cele przypisujemy do sledzonych osob po odleglosci,
+//   - wygladzanie: osoba siedzaca - mediana z 5 ramek (odrzuca skoki z odbic
+//     od metalu) i mocne usrednianie; idaca - lekkie, bez opoznienia,
+//   - przytrzymanie celu zgubionego na 1-2 ramki,
+//   - potwierdzanie nowego celu (pojedyncze ramki z odbic nie licza sie),
+//   - histereza krawedzi stref (osoba na granicy nie "mruga").
 //
 // Uklad pokoju jak w room.h: mm, (0,0) lewy gorny rog planu, x w prawo, y w dol.
 
@@ -68,22 +72,33 @@ typedef enum {
 typedef struct {
     bool    valid;           // radar go widzi (albo przytrzymany - held)
     bool    held;            // radar zgubil go na chwile, pozycja z ostatniej ramki
+    bool    moving;          // idzie (inaczej stoi / siedzi)
     int16_t rx, ry;          // wspolrzedne radaru po wygladzeniu (mm)
     int16_t speed;           // cm/s
+    uint16_t res;            // rozdzielczosc z radaru (mm)
     float   x, y;            // na planie (mm)
     float   dist;            // od radaru (mm)
     uint8_t state;           // pz_tstate_t
     uint8_t zones;           // bity stref obecnosci, w ktorych jest
 } pz_target_t;
 
-// Filtr celu na kazdy slot radaru
+// Sledzona osoba (numer = indeks, niezalezny od slotu radaru)
+#define PZ_MED_N  5          // mediana z tylu ramek (osoba nieruchoma)
+#define PZ_HIST_N 10         // ok. 1 s median - do rozpoznania ruchu
 typedef struct {
-    bool     on;             // slot sledzony
-    bool     confirmed;      // widziany bez przerwy dosc dlugo
+    bool     on;             // sledzona
+    bool     confirmed;      // widziana bez przerwy dosc dlugo
+    bool     moving;
     float    x, y;           // wygladzona pozycja (uklad radaru)
     int16_t  speed;
+    uint16_t res;
     uint32_t first_ms, seen_ms;
     uint8_t  zmask;          // strefy (wszystkie rodzaje) z poprzedniej ramki
+    uint8_t  vmask;          // bity: predkosc ruchu w ostatnich 3 ramkach
+    uint8_t  dmask;          // bity: wyrazne przesuniecie w ostatnich 3 ramkach
+    uint8_t  bn, bi, hn, hi;
+    int16_t  bx[PZ_MED_N], by[PZ_MED_N];
+    float    hx[PZ_HIST_N], hy[PZ_HIST_N];
 } pz_filt_t;
 
 // Zapis o osobie w obszarze (na kazdy z 3 slotow radaru)
@@ -127,7 +142,7 @@ bool pz_in_zone(const pz_zone_t *z, float x, float y);
 // Jedna ramka radaru. raw: 3 cele (valid=false gdy brak), now_ms rosnacy zegar.
 // online=false: radar milczy - zachowujemy stan (nie kasujemy obecnosci
 // z powodu przerwy w lacznosci).
-typedef struct { bool valid; int16_t x, y, speed; } pz_raw_t;
+typedef struct { bool valid; int16_t x, y, speed; uint16_t res; } pz_raw_t;
 void pz_update(pz_state_t *s, const pz_raw_t raw[PZ_TARGETS], bool online, uint32_t now_ms);
 
 // Walidacja przed zapisem; NULL = ok, inaczej komunikat dla panelu

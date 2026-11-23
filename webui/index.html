@@ -353,6 +353,7 @@ canvas{display:block;width:100%}
         <div class="radar-opts">
           <label class="tgl"><input type="checkbox" id="o-trail" checked onchange="saveOpt()">Ślad ruchu</label>
           <label class="tgl"><input type="checkbox" id="o-flip" onchange="saveFlip(this.checked)">Odwróć lewo/prawo</label>
+          <label class="tgl" title="Szare punkty: to, co podaje radar przed filtrami modułu"><input type="checkbox" id="o-raw" onchange="saveOpt()">Surowe odczyty</label>
         </div>
       </div>
       <div class="card">
@@ -481,7 +482,7 @@ canvas{display:block;width:100%}
 var $ = function(id){ return document.getElementById(id); };
 var PAGES = { pulpit:['Podgląd','Pulpit'], room:['Podgląd','Pomieszczenie'], radar:['Podgląd','Radar'], siec:['Ustawienia','Sieć Wi‑Fi'], akt:['Ustawienia','Aktualizacje'], system:['Ustawienia','System'] };
 var COLORS = ['#3d8bff', '#17c964', '#f5a524'];
-var st = null, sens = null, opt = { trail:true, flip:false }, trails = {}, ws = null, wsOk = false, pollT = null;
+var st = null, sens = null, opt = { trail:true, flip:false, raw:false }, rawHist = [], trails = {}, ws = null, wsOk = false, pollT = null;
 
 function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
 function lsSet(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
@@ -632,6 +633,8 @@ function onSensors(d){
     while (a.length > 40) a.shift();
   });
   Object.keys(trails).forEach(function(k){ trails[k] = trails[k].filter(function(p){ return now - p.t < 4000; }); });
+  (r.online && r.rt || []).forEach(function(q){ rawHist.push({ x:q[0], y:q[1], t:now }); });
+  rawHist = rawHist.filter(function(p){ return now - p.t < 2000; });
   drawRadar();
   zoneLive();
   if (!rdrag) drawRoom();
@@ -647,7 +650,7 @@ function targetRows(r){
     return '<tr><td><span class="tid"><i style="background:' + COLORS[(t.id - 1) % 3] + '"></i>' + t.id + '</span></td>' +
       '<td>' + nf(dist, 2) + ' m</td><td>' + nf(ang, 0) + '°</td>' +
       '<td>' + nf(t.x / 1000, 2) + ' m</td><td>' + nf(t.y / 1000, 2) + ' m</td>' +
-      '<td>' + (Math.abs(v) < 0.05 ? 'stoi' : nf(Math.abs(v), 1) + ' m/s ' + (v < 0 ? '↓' : '↑')) + '</td>' +
+      '<td>' + (t.m === 0 || (t.m === undefined && Math.abs(v) < 0.05) ? (t.h ? 'zgubiony' : 'nie rusza się') : Math.abs(v) < 0.05 ? 'w bok' : nf(Math.abs(v), 1) + ' m/s ' + (v < 0 ? '↓' : '↑')) + '</td>' +
       '<td>' + esc(where(t)) + '</td></tr>';
   }).join('');
 }
@@ -673,6 +676,16 @@ function presZones(p){
 
 // --- podglad radaru ---
 function cssVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function pill(g, text, x, y){
+  g.font = '600 12px Segoe UI, system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  var w = g.measureText(text).width + 12, a = g.globalAlpha;
+  g.fillStyle = cssVar('--card'); g.globalAlpha = a * 0.85;
+  g.beginPath(); g.roundRect ? g.roundRect(x - w / 2, y - 9, w, 18, 9) : g.rect(x - w / 2, y - 9, w, 18); g.fill();
+  g.globalAlpha = a; g.fillStyle = cssVar('--txt'); g.fillText(text, x, y + 0.5);
+  g.textBaseline = 'alphabetic';
+}
+// Ślad bez skoków: przerwa, gdy kolejne punkty są dalej niż 1 m (cel zgubiony i znaleziony gdzie indziej)
+function trailOk(a, b){ return Math.hypot(a.x - b.x, a.y - b.y) < 1000; }
 function drawRadar(){
   var cv = $('cv');
   if (!cv || !$('p-radar').classList.contains('on')) return;
@@ -716,6 +729,7 @@ function drawRadar(){
       var a = trails[k]; if (a.length < 2) return;
       g.strokeStyle = COLORS[(k - 1) % 3]; g.lineWidth = 2; g.lineCap = 'round';
       for (var i = 1; i < a.length; i++) {
+        if (!trailOk(a[i - 1], a[i])) continue;
         g.globalAlpha = i / a.length * 0.5;
         var p0 = P(a[i - 1].x, a[i - 1].y), p1 = P(a[i].x, a[i].y);
         g.beginPath(); g.moveTo(p0[0], p0[1]); g.lineTo(p1[0], p1[1]); g.stroke();
@@ -731,16 +745,28 @@ function drawRadar(){
       g.beginPath(); g.arc(p[0], p[1], 20, 0, Math.PI * 2); g.fill();
       g.globalAlpha = 1;
       g.beginPath(); g.arc(p[0], p[1], 8, 0, Math.PI * 2); g.fill();
-      g.fillStyle = cssVar('--txt'); g.font = '600 12px Segoe UI, system-ui, sans-serif'; g.textAlign = 'center';
-      g.fillText(t.id + ' · ' + nf(Math.hypot(t.x, t.y) / 1000, 1) + ' m', p[0], p[1] - 26);
+      pill(g, t.id + ' · ' + nf(Math.hypot(t.x, t.y) / 1000, 1) + ' m', p[0], p[1] - 28);
     });
+  }
+  // surowe odczyty radaru z ostatnich 2 s (przed filtrami modułu) - chmura
+  // punktów pokazuje, jak bardzo radar "rozrzuca" pozycję w tym miejscu
+  if (opt.raw) {
+    var now = Date.now();
+    g.strokeStyle = cssVar('--txt'); g.lineWidth = 1.2;
+    rawHist.forEach(function(q){
+      var p = P(q.x, q.y);
+      g.globalAlpha = 0.75 * (1 - (now - q.t) / 2000);
+      g.beginPath(); g.arc(p[0], p[1], 3.5, 0, Math.PI * 2); g.stroke();
+    });
+    g.globalAlpha = 1;
   }
 }
 window.addEventListener('resize', function(){ drawRadar(); drawRoom(); });
 function saveOpt(){
   opt.trail = $('o-trail').checked;
+  opt.raw = $('o-raw').checked;
   $('r-trail').checked = opt.trail;
-  lsSet('sih_radar_opt', JSON.stringify({ trail:opt.trail }));
+  lsSet('sih_radar_opt', JSON.stringify({ trail:opt.trail, raw:opt.raw }));
   drawRadar(); drawRoom();
 }
 
@@ -1096,6 +1122,7 @@ function drawPlan(cv, page, edit){
       g.strokeStyle = COLORS[(k - 1) % 3]; g.lineWidth = 2; g.lineCap = 'round';
       var on = counted(+k, toRoom(a[a.length - 1].x, a[a.length - 1].y));
       for (var i = 1; i < a.length; i++) {
+        if (!trailOk(a[i - 1], a[i])) continue;
         var p0 = toRoom(a[i - 1].x, a[i - 1].y), p1 = toRoom(a[i].x, a[i].y);
         g.globalAlpha = i / a.length * 0.5 * (on ? 1 : 0.4);
         var s0 = P(p0[0], p0[1]), s1 = P(p1[0], p1[1]);
@@ -1111,9 +1138,8 @@ function drawPlan(cv, page, edit){
       g.beginPath(); g.arc(p[0], p[1], 18, 0, Math.PI * 2); g.fill();
       g.globalAlpha = on ? 1 : 0.4;
       g.beginPath(); g.arc(p[0], p[1], 7, 0, Math.PI * 2); g.fill();
-      g.fillStyle = txt; g.font = F; g.textAlign = 'center';
       var why = pres && pres.ts && !on ? TST[pres.ts[t.id - 1]] : '';
-      g.fillText(String(t.id) + (why ? ' · ' + why : ''), p[0], p[1] - 24);
+      pill(g, String(t.id) + (why ? ' · ' + why : ''), p[0], p[1] - 27);
       g.globalAlpha = 1;
     });
   }
@@ -1498,7 +1524,8 @@ async function reboot(){
 (function(){
   var t = lsGet('sih_theme') || 'auto';
   document.querySelectorAll('.theme-seg button').forEach(function(b){ b.classList.toggle('on', b.dataset.th === t); });
-  try { var o = JSON.parse(lsGet('sih_radar_opt') || '{}'); if (typeof o.trail === 'boolean') opt.trail = o.trail; } catch(e){}
+  try { var o = JSON.parse(lsGet('sih_radar_opt') || '{}'); if (typeof o.trail === 'boolean') opt.trail = o.trail; opt.raw = !!o.raw; } catch(e){}
+  $('o-raw').checked = opt.raw;
   $('o-trail').checked = $('r-trail').checked = opt.trail;
   loadRoom();
   loadZones();

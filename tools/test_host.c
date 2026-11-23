@@ -10,6 +10,7 @@
 #include "presence_core.h"
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static int fails = 0;
@@ -194,7 +195,7 @@ static void test_presence(void) {
     // Odrzucanie: za daleko, poza pokojem, strefa pomijana
     pz_setup(&s);
     s.zones[1] = (pz_zone_t){ 0, 0, 800, 800, PZ_ZONE_IGNORE, "Firanka" };
-    pz_raw_t r[3] = { { true, 0, 6500, 0 }, { true, 0, 4600, 0 }, { true, 1500, 500, 0 } };
+    pz_raw_t r[3] = { { true, 0, 6500, 0, 0 }, { true, 0, 4600, 0, 0 }, { true, 1500, 500, 0, 0 } };
     clk = 1000;
     pz_update(&s, r, true, clk);
     CHECK(s.t[0].state == PZ_T_FAR);
@@ -261,7 +262,7 @@ static void test_presence(void) {
     clk = 1000;
     float lo = 1e9f, hi = -1e9f;
     for (int k = 0; k < 60; k++) {
-        pz_raw_t j[3] = { { true, (int16_t)(k % 2 ? 100 : -100), (int16_t)(2000 + (k % 3) * 60 - 60), 0 } };
+        pz_raw_t j[3] = { { true, (int16_t)(k % 2 ? 100 : -100), (int16_t)(2000 + (k % 3) * 60 - 60), 0, 0 } };
         pz_update(&s, j, true, clk += 100);
         if (k >= 30) {
             if (s.t[0].rx < lo) lo = s.t[0].rx;
@@ -274,7 +275,7 @@ static void test_presence(void) {
     pz_setup(&s);
     clk = 1000;
     for (int k = 0; k < 50; k++) {
-        pz_raw_t gh[3] = { { k % 4 == 0, 500, 3000, 0 } };   // co 4. ramka, 1 ramka naraz
+        pz_raw_t gh[3] = { { k % 4 == 0, 500, 3000, 0, 0 } };   // co 4. ramka, 1 ramka naraz
         pz_update(&s, gh, true, clk += 100);
         CHECK(!s.room_tr.occ);
     }
@@ -299,13 +300,50 @@ static void test_presence(void) {
     int out = 0;
     for (int k = 0; k < 40; k++) {
         // na planie x = 2000 - rx: 1440..1560 wokol krawedzi 1500
-        pz_raw_t e[3] = { { true, (int16_t)(k % 2 ? 560 : 440), 2000, 0 } };
+        pz_raw_t e[3] = { { true, (int16_t)(k % 2 ? 560 : 440), 2000, 0, 0 } };
         pz_update(&s, e, true, clk += 100);
         if (!(s.t[0].zones & 1)) out++;
     }
     CHECK(out == 0 && s.zone_tr[0].n == 1);
     frames(&s, 20, true, 1000, 2000, 1000, 2000, 0);   // x = 1000: wyraznie poza strefa
     CHECK(!(s.t[0].zones & 1));
+
+    // Radar zamienia numery dwoch osob - nasze numery zostaja przy osobach
+    pz_setup(&s);
+    clk = 1000;
+    int swaps_bad = 0, pend = 0;
+    for (int k = 0; k < 100; k++) {
+        bool sw = (k / 20) % 2;                     // co 2 s zamiana slotow
+        pz_raw_t a = { true, 300, 800, 0, 360 }, b = { true, -800, 2000, 0, 360 };
+        pz_raw_t two[3] = { sw ? b : a, sw ? a : b, { 0 } };
+        pz_update(&s, two, true, clk += 100);
+        if (k > 10) {
+            if (abs(s.t[0].rx - 300) > 150 || abs(s.t[1].rx + 800) > 150) swaps_bad++;
+            if (s.t[0].state == PZ_T_PENDING || s.t[1].state == PZ_T_PENDING) pend++;
+        }
+    }
+    CHECK(swaps_bad == 0 && pend == 0);
+    CHECK(s.room_tr.n == 2);
+
+    // Osoba siedzi daleko, radar podaje szum +-20 cm i co jakis czas skok 1,2 m
+    pz_setup(&s);
+    clk = 1000;
+    unsigned seed = 7;
+    float lo2 = 1e9f, hi2 = -1e9f;
+    for (int k = 0; k < 150; k++) {
+        seed = seed * 1103515245u + 12345u;
+        int nx = (int)((seed >> 16) % 400) - 200, ny = (int)((seed >> 8) % 300) - 150;
+        if (k % 17 == 5) ny += 1200;                // odbicie od metalu
+        pz_raw_t q[3] = { { true, (int16_t)(-800 + nx), (int16_t)(2000 + ny), (int16_t)(nx % 9), 360 } };
+        pz_update(&s, q, true, clk += 100);
+        if (k >= 40) {
+            float d = hypotf(s.t[0].rx + 800, s.t[0].ry - 2000);
+            if (d < lo2) lo2 = d;
+            if (d > hi2) hi2 = d;
+        }
+    }
+    printf("Siedzaca osoba z szumem: odchylenie po filtrze do %.0f mm\n", hi2);
+    CHECK(hi2 < 120);
 
     pz_cfg_t c;
     pz_cfg_default(&c);

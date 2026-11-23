@@ -95,8 +95,13 @@ poza obrysem pokoju. W tabeli celów kolumna **Gdzie** mówi, w której strefie 
 osoba albo dlaczego została pominięta.
 
 **Filtry celów.** Zanim moduł policzy obecność, poprawia to, co podaje radar:
-- **wygładzanie pozycji** – drgania stojącej osoby (10–20 cm) są tłumione; idąca osoba
-  jest śledzona prawie bez opóźnienia (ok. 70 ms),
+- **stałe numery osób** – radar potrafi zamienić numery (sloty) między osobami; moduł
+  przypisuje cele do śledzonych osób po odległości, więc numer, kolor i ślad zostają
+  przy osobie,
+- **wygładzanie pozycji** – osoba, która się nie rusza: mediana z 5 ramek (odrzuca skoki
+  z odbić od metalu, np. monitorów) i uśrednianie ok. 1 s; idąca: prawie bez opóźnienia
+  (ok. 70 ms). Ruch to prędkość z radaru albo przesunięcie o ponad 25 cm w ciągu
+  sekundy, w 2 z 3 ostatnich ramek,
 - **przytrzymanie zgubionego celu** – radar czasem gubi osobę na 1–2 ramki; cel zostaje
   w miejscu do 0,3 s, więc obecność i znacznik na planie nie mrugają,
 - **potwierdzanie nowych celów** – nowy cel liczy się dopiero po 0,4 s ciągłego widzenia;
@@ -104,7 +109,9 @@ osoba albo dlaczego została pominięta.
 - **histereza stref** – wejście do strefy na jej krawędzi, wyjście dopiero 15 cm dalej;
   osoba stojąca na granicy nie przełącza strefy co chwilę.
 
-Panel pokazuje pozycje już po filtrach.
+Panel pokazuje pozycje już po filtrach. W zakładce Radar opcja **Surowe odczyty** rysuje
+dodatkowo chmurę punktów z ostatnich 2 s prosto z radaru – widać, jak bardzo radar
+rozrzuca pozycję w danym miejscu.
 
 **Pamięć osoby nieruchomej.** Radar przestaje widzieć kogoś, kto siedzi lub leży bez
 ruchu. Jeśli osoba zniknęła w środku pokoju, moduł uznaje, że nadal tam jest. Pamięć

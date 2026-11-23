@@ -115,9 +115,17 @@ static int sensors_json(char *buf, int cap) {
     bool first = true;
     for (int i = 0; i < PZ_TARGETS && n < cap; i++) {
         if (!pt[i].valid) continue;
-        n += snprintf(buf + n, cap - n, "%s{\"id\":%d,\"x\":%d,\"y\":%d,\"v\":%d,\"res\":%u,\"h\":%d}",
+        n += snprintf(buf + n, cap - n, "%s{\"id\":%d,\"x\":%d,\"y\":%d,\"v\":%d,\"res\":%u,\"h\":%d,\"m\":%d}",
                       first ? "" : ",", i + 1, pt[i].rx, pt[i].ry, pt[i].speed,
-                      r.t[i].valid ? r.t[i].res_mm : 0, pt[i].held);
+                      pt[i].res, pt[i].held, pt[i].moving);
+        first = false;
+    }
+    // Surowe odczyty radaru (podglad dzialania filtrow w zakladce Radar)
+    if (n < cap) n += snprintf(buf + n, cap - n, "],\"rt\":[");
+    first = true;
+    for (int i = 0; i < LD2450_MAX_TARGETS && n < cap; i++) {
+        if (!r.online || !r.t[i].valid) continue;
+        n += snprintf(buf + n, cap - n, "%s[%d,%d]", first ? "" : ",", r.t[i].x_mm, r.t[i].y_mm);
         first = false;
     }
     if (n < cap) {

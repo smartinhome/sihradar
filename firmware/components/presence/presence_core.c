@@ -13,9 +13,10 @@
 #define REACQ_BASE_MM   600.0f     // + szum pomiaru
 #define REACQ_MM_PER_MS 1.6f       // + szybki krok 1,6 m/s
 // Filtry celu
-#define JUMP_MM         800.0f     // skok dalszy niz to (+ szybki krok) = inny cel w slocie
-#define STILL_MM        150.0f     // ...a blizszy przy malej predkosci = drganie pomiaru
-#define ALPHA_STILL     0.2f       // wygladzanie osoby stojacej (ok. 0,5 s)
+#define GATE_MM         800.0f     // dalej niz to (+ szybki krok) = inna osoba
+#define GATE_PEN        1000.0f    // koszt osoby lub celu bez pary przy przypisywaniu
+#define STILL_MOVE_MM   250.0f     // przesuniecie mediany w ~1 s = idzie
+#define ALPHA_STILL     0.12f      // wygladzanie osoby nieruchomej (ok. 1 s)
 #define ALPHA_MOVE      0.6f       // ...i idacej (opoznienie ok. 70 ms)
 #define HOLD_MS         300u       // tyle przytrzymujemy cel zgubiony przez radar
 #define CONFIRM_MS      400u       // tyle nowy cel musi byc widoczny bez przerwy
@@ -43,40 +44,125 @@ void pz_zones_changed(pz_state_t *s) {
     for (int i = 0; i < PZ_TARGETS; i++) s->f[i].zmask = 0;
 }
 
-// Jedna ramka filtra slotu. true = cel istnieje (widoczny albo przytrzymany).
-static bool filt_step(pz_filt_t *f, const pz_raw_t *r, uint32_t now, bool *held) {
-    *held = false;
-    if (r->valid) {
-        float d = f->on ? hypotf(r->x - f->x, r->y - f->y) : 0;
-        if (!f->on || d > JUMP_MM + REACQ_MM_PER_MS * (float)(now - f->seen_ms)) {
-            // nowy cel (albo radar dal ten numer komus innemu) - od zera
-            f->on = true;
-            f->confirmed = false;
-            f->x = r->x;
-            f->y = r->y;
-            f->first_ms = now;
-            f->zmask = 0;
-        } else {
-            bool still = r->speed < MOVE_SPEED_CMS && r->speed > -MOVE_SPEED_CMS && d < STILL_MM;
-            float a = still ? ALPHA_STILL : ALPHA_MOVE;
-            f->x += a * (r->x - f->x);
-            f->y += a * (r->y - f->y);
+static float med(const int16_t *v, int n) {
+    int16_t t[PZ_MED_N];
+    for (int i = 0; i < n; i++) {
+        int16_t x = v[i];
+        int j = i;
+        while (j > 0 && t[j - 1] > x) { t[j] = t[j - 1]; j--; }
+        t[j] = x;
+    }
+    return n % 2 ? t[n / 2] : (t[n / 2 - 1] + t[n / 2]) / 2.0f;
+}
+
+static int bits3(uint8_t m) { return (m & 1) + ((m >> 1) & 1) + ((m >> 2) & 1); }
+
+static void filt_start(pz_filt_t *f, const pz_raw_t *r, uint32_t now) {
+    memset(f, 0, sizeof(*f));
+    f->on = true;
+    f->x = r->x;
+    f->y = r->y;
+    f->speed = r->speed;
+    f->res = r->res;
+    f->first_ms = f->seen_ms = now;
+    f->bx[0] = r->x; f->by[0] = r->y; f->bn = 1; f->bi = 1;
+    f->hx[0] = r->x; f->hy[0] = r->y; f->hn = 1; f->hi = 1;
+    f->moving = true;               // dopiero co sie pojawil
+}
+
+// Kolejny pomiar sledzonej osoby
+static void filt_feed(pz_filt_t *f, const pz_raw_t *r, uint32_t now) {
+    f->bx[f->bi] = r->x;
+    f->by[f->bi] = r->y;
+    f->bi = (f->bi + 1) % PZ_MED_N;
+    if (f->bn < PZ_MED_N) f->bn++;
+    float mx = med(f->bx, f->bn), my = med(f->by, f->bn);
+    // ruch: radar mierzy predkosc w 2 z 3 ostatnich ramek albo mediana
+    // przesunela sie wyraznie w ciagu ok. 1 s (ruch w bok ma predkosc ~0)
+    bool fast = r->speed >= MOVE_SPEED_CMS || r->speed <= -MOVE_SPEED_CMS;
+    f->vmask = (uint8_t)(((f->vmask << 1) | fast) & 7);
+    int old = f->hn < PZ_HIST_N ? 0 : f->hi;
+    float disp = hypotf(mx - f->hx[old], my - f->hy[old]);
+    f->hx[f->hi] = mx;
+    f->hy[f->hi] = my;
+    f->hi = (f->hi + 1) % PZ_HIST_N;
+    if (f->hn < PZ_HIST_N) f->hn++;
+    f->dmask = (uint8_t)(((f->dmask << 1) | (disp > STILL_MOVE_MM)) & 7);
+    // 2 z 3 ostatnich ramek - pojedynczy skok szumu nie przelacza w "idzie"
+    f->moving = bits3(f->vmask) >= 2 || bits3(f->dmask) >= 2 || now - f->first_ms < TRANSIENT_MS;
+    if (f->moving) {
+        // idzie: biezacy pomiar, lekko wygladzony (mediana dawalaby opoznienie)
+        f->x += ALPHA_MOVE * (r->x - f->x);
+        f->y += ALPHA_MOVE * (r->y - f->y);
+    } else {
+        // siedzi / stoi: mediana odrzuca skoki z odbic, srednia tlumi drgania
+        f->x += ALPHA_STILL * (mx - f->x);
+        f->y += ALPHA_STILL * (my - f->y);
+    }
+    f->speed = r->speed;
+    f->res = r->res;
+    f->seen_ms = now;
+    if (!f->confirmed && now - f->first_ms >= CONFIRM_MS) f->confirmed = true;
+}
+
+// Przypisanie celow radaru do sledzonych osob. Radar potrafi zamienic numery
+// miedzy osobami (np. siedzaca przy biurku i druga dalej) - wtedy znaczniki
+// i liczniki skakalyby miedzy nimi. Sprawdzamy wszystkie 6 par 3x3 i bierzemy
+// najmniejsza laczna odleglosc; para dalsza niz bramka to dwie rozne osoby.
+static void assoc(pz_state_t *s, const pz_raw_t raw[PZ_TARGETS], uint32_t now, int match[PZ_TARGETS]) {
+    static const uint8_t P[6][3] = { {0,1,2}, {0,2,1}, {1,0,2}, {1,2,0}, {2,0,1}, {2,1,0} };
+    float best = 1e30f;
+    int bp = 0;
+    uint8_t bm = 0;
+    for (int p = 0; p < 6; p++) {
+        float cost = 0;
+        uint8_t m = 0;
+        for (int t = 0; t < PZ_TARGETS; t++) {
+            const pz_filt_t *f = &s->f[t];
+            const pz_raw_t *r = &raw[P[p][t]];
+            if (f->on && r->valid) {
+                float d = hypotf(r->x - f->x, r->y - f->y);
+                if (d <= GATE_MM + REACQ_MM_PER_MS * (float)(now - f->seen_ms)) {
+                    cost += d;
+                    m |= 1u << t;
+                    continue;
+                }
+            }
+            if (f->on) cost += GATE_PEN;
+            if (r->valid) cost += GATE_PEN;
         }
-        f->speed = r->speed;
-        f->seen_ms = now;
-        if (!f->confirmed && now - f->first_ms >= CONFIRM_MS) f->confirmed = true;
-        return true;
+        if (cost < best) { best = cost; bp = p; bm = m; }
     }
-    if (!f->on) return false;
-    // Radar gubi osobe na 1-2 ramki - potwierdzony cel trzymamy w miejscu.
-    // Niepotwierdzony (pojedyncze ramki z odbic) przepada od razu.
-    if (f->confirmed && now - f->seen_ms < HOLD_MS) {
-        f->speed = 0;
-        *held = true;
-        return true;
+    for (int t = 0; t < PZ_TARGETS; t++) match[t] = (bm & (1u << t)) ? P[bp][t] : -1;
+}
+
+static void track_targets(pz_state_t *s, const pz_raw_t raw[PZ_TARGETS], uint32_t now, bool held[PZ_TARGETS]) {
+    int match[PZ_TARGETS];
+    bool used[PZ_TARGETS] = { false };
+    assoc(s, raw, now, match);
+    for (int t = 0; t < PZ_TARGETS; t++) {
+        pz_filt_t *f = &s->f[t];
+        held[t] = false;
+        if (match[t] >= 0) {
+            filt_feed(f, &raw[match[t]], now);
+            used[match[t]] = true;
+        } else if (f->on) {
+            // Radar gubi osobe na 1-2 ramki - potwierdzona zostaje w miejscu.
+            // Niepotwierdzona (pojedyncze ramki z odbic) przepada od razu.
+            if (f->confirmed && now - f->seen_ms < HOLD_MS) {
+                f->speed = 0;
+                held[t] = true;
+            } else {
+                f->on = false;
+            }
+        }
     }
-    f->on = false;
-    return false;
+    // Nowe cele na wolne miejsca
+    for (int r = 0; r < PZ_TARGETS; r++) {
+        if (!raw[r].valid || used[r]) continue;
+        for (int t = 0; t < PZ_TARGETS; t++)
+            if (!s->f[t].on) { filt_start(&s->f[t], &raw[r], now); break; }
+    }
 }
 
 // Strefa z histereza: wejscie na krawedzi, wyjscie dopiero ZONE_HYST_MM dalej
@@ -216,18 +302,21 @@ void pz_update(pz_state_t *s, const pz_raw_t raw[PZ_TARGETS], bool online, uint3
     if (!online) return;
     uint8_t in_room_mask = 0;
     uint8_t in_zone[PZ_MAX_ZONES] = {0};
+    bool held[PZ_TARGETS];
+    track_targets(s, raw, now, held);
 
     for (int i = 0; i < PZ_TARGETS; i++) {
         pz_target_t *t = &s->t[i];
         pz_filt_t *f = &s->f[i];
         memset(t, 0, sizeof(*t));
-        bool held;
-        if (!filt_step(f, &raw[i], now, &held)) continue;
+        if (!f->on) continue;
         t->valid = true;
-        t->held = held;
+        t->held = held[i];
+        t->moving = f->moving;
         t->rx = (int16_t)lroundf(f->x);
         t->ry = (int16_t)lroundf(f->y);
         t->speed = f->speed;
+        t->res = f->res;
         t->dist = hypotf(f->x, f->y);
         pz_to_room(&s->room, f->x, f->y, &t->x, &t->y);
         // Strefy z histereza (pamietamy przynaleznosc z poprzedniej ramki)
