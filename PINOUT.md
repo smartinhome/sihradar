@@ -47,6 +47,11 @@ na później, np. LD2410C lub PIR (GP14), przycisk albo czujnik analogowy (GP0�
   komora albo przewód 3–5 cm, otwory w obudowie). Inaczej temperatura będzie zawyżona,
   a odczyty gazu przekłamane.
 - Przewody prowadź od strony złącza USB, z dala od dolnej krawędzi z anteną.
+- **Montaż radaru pionowo, na ścianie.** Anteny LD2450 leżą w jednym rzędzie i radar mierzy
+  kąt tylko w tej płaszczyźnie. Płytka ma stać pionowo, przodem do pokoju (anteny w
+  poziomym rzędzie), najlepiej na wysokości ok. 1,5–2 m z lekkim pochyleniem w dół.
+  Radar położony płasko (np. na suficie anteną w dół) mierzy praktycznie tylko odległość,
+  a ruchu w bok nie rozróżnia.
 - Podciąganie I2C: większość płytek BME688 ma rezystory 10 kΩ (lub 4,7 kΩ) do 3V3.
   Gołe czujniki wymagają rezystorów 4,7 kΩ na SDA i SCL.
 - BSEC2 (IAQ, CO2eq od Bosch): przed wyborem sprawdź, czy wydanie BSEC2 ma prekompilowaną

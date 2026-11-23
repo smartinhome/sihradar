@@ -96,6 +96,12 @@ void presence_init(void) {
     xTaskCreate(task, "presence", 3072, NULL, 5, NULL);
 }
 
+void presence_targets(pz_target_t out[PZ_TARGETS]) {
+    lock();
+    memcpy(out, s_st.t, sizeof(s_st.t));
+    unlock();
+}
+
 pz_cfg_t presence_get_cfg(void) {
     lock();
     pz_cfg_t c = s_st.cfg;
@@ -186,7 +192,7 @@ const char *presence_save(const pz_cfg_t *cfg, const pz_zone_t *zones, int n) {
     bool zones_changed = memcmp(s_st.zones, zb.z, sizeof(s_st.zones)) != 0;
     s_st.cfg = *cfg;
     memcpy(s_st.zones, zb.z, sizeof(s_st.zones));
-    if (zones_changed) memset(s_st.zone_tr, 0, sizeof(s_st.zone_tr));   // nowe obszary - od zera
+    if (zones_changed) pz_zones_changed(&s_st);   // nowe obszary - od zera
     unlock();
     ESP_LOGI(TAG, "Zapisano %d stref, zasieg %u mm", n, cfg->max_dist_mm);
     return NULL;

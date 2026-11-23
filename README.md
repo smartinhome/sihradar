@@ -25,6 +25,10 @@ zmienić po aktualizacji przez HLKRadarTool. Gdy radar milczy, SIH Radar sam spr
 wszystkie obsługiwane prędkości, a po znalezieniu właściwej ustawia radarowi z powrotem
 256000. Podgląd łącza (prędkość, odebrane bajty, surowe dane) jest w zakładce Radar.
 
+Radar montuj **pionowo** na ścianie (anteny w poziomym rzędzie), na wysokości ok.
+1,5–2 m. LD2450 mierzy kąt tylko w płaszczyźnie anten – położony płasko nie rozróżnia
+ruchu w bok.
+
 Szczegóły i uzasadnienie wyboru pinów są w [PINOUT.md](PINOUT.md), a rozpoznanie
 projektu w [RESEARCH.md](RESEARCH.md).
 
@@ -90,6 +94,18 @@ Moduł pomija też cele dalsze niż ustawiona odległość i (gdy plan jest zapi
 poza obrysem pokoju. W tabeli celów kolumna **Gdzie** mówi, w której strefie jest
 osoba albo dlaczego została pominięta.
 
+**Filtry celów.** Zanim moduł policzy obecność, poprawia to, co podaje radar:
+- **wygładzanie pozycji** – drgania stojącej osoby (10–20 cm) są tłumione; idąca osoba
+  jest śledzona prawie bez opóźnienia (ok. 70 ms),
+- **przytrzymanie zgubionego celu** – radar czasem gubi osobę na 1–2 ramki; cel zostaje
+  w miejscu do 0,3 s, więc obecność i znacznik na planie nie mrugają,
+- **potwierdzanie nowych celów** – nowy cel liczy się dopiero po 0,4 s ciągłego widzenia;
+  pojedyncze ramki z odbić nie włączają obecności (w tabeli: „sprawdzanie”),
+- **histereza stref** – wejście do strefy na jej krawędzi, wyjście dopiero 15 cm dalej;
+  osoba stojąca na granicy nie przełącza strefy co chwilę.
+
+Panel pokazuje pozycje już po filtrach.
+
 **Pamięć osoby nieruchomej.** Radar przestaje widzieć kogoś, kto siedzi lub leży bez
 ruchu. Jeśli osoba zniknęła w środku pokoju, moduł uznaje, że nadal tam jest. Pamięć
 kończy się, gdy osoba się ruszy albo minie ustawiony limit (domyślnie 30 min). Za
@@ -152,7 +168,8 @@ Otwórz http://localhost:8718. Opcja `--ap` udaje pierwsze uruchomienie. Hasło
 
 `tools/test_host.c` sprawdza parser ramek LD2450 (przykład z dokumentacji radaru,
 urwane ramki, odczyt wersji), obliczenia BME688 oraz logikę obecności: przeliczanie na
-plan, strefy pomijane, pamięć osoby nieruchomej i rozpoznawanie wyjścia. Uruchamia się je w GitHub Actions
+plan, strefy pomijane, pamięć osoby nieruchomej, rozpoznawanie wyjścia oraz filtry
+(wygładzanie, przytrzymanie zgubionego celu, odsiew duchów, histereza stref). Uruchamia się je w GitHub Actions
 przed kompilacją firmware.
 
 ## API

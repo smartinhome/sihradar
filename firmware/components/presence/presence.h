@@ -16,3 +16,5 @@ int presence_zones_json(char *buf, int cap);
 // NULL = zapisano, inaczej komunikat dla panelu.
 const char *presence_save(const pz_cfg_t *cfg, const pz_zone_t *zones, int n);
 pz_cfg_t presence_get_cfg(void);
+// Cele po filtrach (wygladzone, przytrzymane, z powodem pominiecia)
+void presence_targets(pz_target_t out[PZ_TARGETS]);

@@ -14,6 +14,10 @@
 //   wyjscia, uznajemy ze nadal tam jest - do czasu az ruszy sie albo minie
 //   limit pamieci. Zniknal przy scianie / na granicy zasiegu w ruchu albo
 //   pojawil sie obok poza strefa - wyszedl.
+// - filtry przed tym wszystkim: wygladzanie pozycji (drgania 10-20 cm),
+//   przytrzymanie celu zgubionego na 1-2 ramki, potwierdzanie nowego celu
+//   (pojedyncze ramki z odbic nie wlaczaja obecnosci) i histereza krawedzi
+//   stref (osoba na granicy nie "mruga").
 //
 // Uklad pokoju jak w room.h: mm, (0,0) lewy gorny rog planu, x w prawo, y w dol.
 
@@ -58,17 +62,29 @@ typedef enum {
     PZ_T_FAR,                // dalej niz max_dist
     PZ_T_OUTSIDE,            // poza obrysem pokoju
     PZ_T_IGNORED,            // w strefie pomijanej
+    PZ_T_PENDING,            // nowy cel, jeszcze niepotwierdzony
 } pz_tstate_t;
 
 typedef struct {
-    bool    valid;           // radar go widzi
-    int16_t rx, ry;          // wspolrzedne radaru (mm)
+    bool    valid;           // radar go widzi (albo przytrzymany - held)
+    bool    held;            // radar zgubil go na chwile, pozycja z ostatniej ramki
+    int16_t rx, ry;          // wspolrzedne radaru po wygladzeniu (mm)
     int16_t speed;           // cm/s
     float   x, y;            // na planie (mm)
     float   dist;            // od radaru (mm)
     uint8_t state;           // pz_tstate_t
     uint8_t zones;           // bity stref obecnosci, w ktorych jest
 } pz_target_t;
+
+// Filtr celu na kazdy slot radaru
+typedef struct {
+    bool     on;             // slot sledzony
+    bool     confirmed;      // widziany bez przerwy dosc dlugo
+    float    x, y;           // wygladzona pozycja (uklad radaru)
+    int16_t  speed;
+    uint32_t first_ms, seen_ms;
+    uint8_t  zmask;          // strefy (wszystkie rodzaje) z poprzedniej ramki
+} pz_filt_t;
 
 // Zapis o osobie w obszarze (na kazdy z 3 slotow radaru)
 typedef struct {
@@ -93,6 +109,7 @@ typedef struct {
     pz_room_t   room;
     pz_zone_t   zones[PZ_MAX_ZONES];
     pz_target_t t[PZ_TARGETS];
+    pz_filt_t   f[PZ_TARGETS];
     pz_track_t  room_tr;
     pz_track_t  zone_tr[PZ_MAX_ZONES];
 } pz_state_t;
@@ -100,6 +117,8 @@ typedef struct {
 void pz_cfg_default(pz_cfg_t *c);
 // Zeruje stan trackerow (np. po zmianie stref)
 void pz_reset(pz_state_t *s);
+// Po zmianie stref: liczniki stref od zera, bez histerezy starych krawedzi
+void pz_zones_changed(pz_state_t *s);
 
 // Cel radaru (X w bok, Y na wprost) -> plan pokoju
 void pz_to_room(const pz_room_t *r, float tx, float ty, float *x, float *y);

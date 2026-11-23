@@ -97,18 +97,27 @@ static int sensors_json(char *buf, int cap) {
     for (int i = 0; i < r.raw_len; i++)
         snprintf(hex + i * 3, sizeof(hex) - i * 3, "%02X ", r.raw[i]);
     if (r.raw_len) hex[r.raw_len * 3 - 1] = 0;
+    // Cele po filtrach modulu: wygladzone, chwilowo zgubione przytrzymane
+    // ("h"), nowe czekaja na potwierdzenie (stan w "pres":{"ts":[..]})
+    pz_target_t pt[PZ_TARGETS];
+    presence_targets(pt);
+    unsigned cnt = 0;
+    for (int i = 0; i < PZ_TARGETS; i++) {
+        if (!r.online) pt[i].valid = false;   // radar milczy - nie pokazujemy starych pozycji
+        if (pt[i].valid) cnt++;
+    }
     int n = snprintf(buf, cap,
         "{\"up\":%lld,\"radar\":{\"online\":%s,\"fw\":\"%s\",\"fps\":%u,\"count\":%u,"
         "\"frames\":%lu,\"errors\":%lu,\"baud\":%lu,\"scan\":%s,\"rx\":%lu,\"raw\":\"%s\",\"targets\":[",
         (long long)(esp_timer_get_time() / 1000), r.online ? "true" : "false", fw,
-        r.fps, r.count, (unsigned long)r.frames, (unsigned long)r.errors,
+        r.fps, cnt, (unsigned long)r.frames, (unsigned long)r.errors,
         (unsigned long)r.baud, r.scanning ? "true" : "false", (unsigned long)r.rx_bytes, hex);
     bool first = true;
-    for (int i = 0; i < LD2450_MAX_TARGETS && n < cap; i++) {
-        if (!r.t[i].valid) continue;
-        n += snprintf(buf + n, cap - n, "%s{\"id\":%d,\"x\":%d,\"y\":%d,\"v\":%d,\"res\":%u}",
-                      first ? "" : ",", i + 1, r.t[i].x_mm, r.t[i].y_mm, r.t[i].speed_cms,
-                      r.t[i].res_mm);
+    for (int i = 0; i < PZ_TARGETS && n < cap; i++) {
+        if (!pt[i].valid) continue;
+        n += snprintf(buf + n, cap - n, "%s{\"id\":%d,\"x\":%d,\"y\":%d,\"v\":%d,\"res\":%u,\"h\":%d}",
+                      first ? "" : ",", i + 1, pt[i].rx, pt[i].ry, pt[i].speed,
+                      r.t[i].valid ? r.t[i].res_mm : 0, pt[i].held);
         first = false;
     }
     if (n < cap) {

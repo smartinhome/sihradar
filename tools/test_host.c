@@ -203,6 +203,8 @@ static void test_presence(void) {
     CHECK(!s.room_tr.occ);
     s.cfg.room_only = false;
     pz_update(&s, r, true, clk += 100);
+    CHECK(s.t[1].state == PZ_T_PENDING && !s.room_tr.occ);   // jeszcze nie potwierdzony
+    for (int k = 0; k < 4; k++) pz_update(&s, r, true, clk += 100);
     CHECK(s.t[1].state == PZ_T_OK && s.room_tr.occ && s.room_tr.n == 1);
 
     // Osoba wchodzi na kanape, siada i "znika" dla radaru -> pamiec
@@ -253,6 +255,57 @@ static void test_presence(void) {
     pz_raw_t none[3] = {{0}};
     for (int k = 0; k < 300; k++) pz_update(&s, none, false, clk += 100);
     CHECK(s.room_tr.occ);
+
+    // Filtry: drgania pozycji osoby stojacej sa wygladzane
+    pz_setup(&s);
+    clk = 1000;
+    float lo = 1e9f, hi = -1e9f;
+    for (int k = 0; k < 60; k++) {
+        pz_raw_t j[3] = { { true, (int16_t)(k % 2 ? 100 : -100), (int16_t)(2000 + (k % 3) * 60 - 60), 0 } };
+        pz_update(&s, j, true, clk += 100);
+        if (k >= 30) {
+            if (s.t[0].rx < lo) lo = s.t[0].rx;
+            if (s.t[0].rx > hi) hi = s.t[0].rx;
+        }
+    }
+    CHECK(hi - lo < 100);                          // surowo 200 mm rozrzutu
+
+    // Pojedyncze ramki z odbic (duch) nie wlaczaja obecnosci
+    pz_setup(&s);
+    clk = 1000;
+    for (int k = 0; k < 50; k++) {
+        pz_raw_t gh[3] = { { k % 4 == 0, 500, 3000, 0 } };   // co 4. ramka, 1 ramka naraz
+        pz_update(&s, gh, true, clk += 100);
+        CHECK(!s.room_tr.occ);
+    }
+
+    // Radar gubi osobe na 2 ramki - cel trwa, obecnosc bez przerwy
+    pz_setup(&s);
+    s.cfg.hold_s = 0;
+    s.cfg.memory = false;
+    clk = 1000;
+    frames(&s, 10, true, 0, 2000, 0, 2000, 0);
+    frames(&s, 2, false, 0, 0, 0, 0, 0);
+    CHECK(s.t[0].valid && s.t[0].held && s.room_tr.n == 1);
+    frames(&s, 2, true, 0, 2000, 0, 2000, 0);
+    CHECK(s.t[0].valid && !s.t[0].held && s.t[0].state == PZ_T_OK);   // bez ponownego potwierdzania
+    frames(&s, 4, false, 0, 0, 0, 0, 0);
+    CHECK(!s.t[0].valid);                          // dluzsza przerwa - cel znika
+
+    // Histereza: osoba stoi na krawedzi strefy (x 1500 na planie), pozycja skacze
+    pz_setup(&s);
+    clk = 1000;
+    frames(&s, 10, true, 0, 2000, 0, 2000, 0);     // srodek strefy
+    int out = 0;
+    for (int k = 0; k < 40; k++) {
+        // na planie x = 2000 - rx: 1440..1560 wokol krawedzi 1500
+        pz_raw_t e[3] = { { true, (int16_t)(k % 2 ? 560 : 440), 2000, 0 } };
+        pz_update(&s, e, true, clk += 100);
+        if (!(s.t[0].zones & 1)) out++;
+    }
+    CHECK(out == 0 && s.zone_tr[0].n == 1);
+    frames(&s, 20, true, 1000, 2000, 1000, 2000, 0);   // x = 1000: wyraznie poza strefa
+    CHECK(!(s.t[0].zones & 1));
 
     pz_cfg_t c;
     pz_cfg_default(&c);

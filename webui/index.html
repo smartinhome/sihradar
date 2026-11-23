@@ -863,7 +863,7 @@ async function saveFlip(v){
 // Strefy to prostokąty na planie (mm, jak plan pokoju). Obecność liczy moduł
 // (także bez otwartego panelu); panel tylko rysuje i zapisuje ustawienia.
 var ZCOL = ['#a855f7', '#06b6d4', '#ec4899', '#84cc16', '#f97316', '#14b8a6', '#eab308', '#6366f1'];
-var TST = ['', '', 'za daleko', 'poza pokojem', 'strefa pomijana'];
+var TST = ['', '', 'za daleko', 'poza pokojem', 'strefa pomijana', 'sprawdzanie'];
 var zones = [], zSaved = [], zcfg = { dist:6000, hold:30, zoff:5, latch:30, exit:400, mem:true, room:true };
 var zonesSaved = '', zsel = -1, zCap = null;
 var CFGF = [['c-dist', 'dist', 1000, 0.5, 7.5], ['c-hold', 'hold', 1, 0, 3600], ['c-zoff', 'zoff', 1, 0, 3600], ['c-latch', 'latch', 1, 1, 240], ['c-exit', 'exit', 1000, 0.1, 1.5]];

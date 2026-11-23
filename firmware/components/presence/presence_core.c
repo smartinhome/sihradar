@@ -12,6 +12,14 @@
 #define REACQ_MS        3000u      // tyle szukamy znikniętej osoby obok
 #define REACQ_BASE_MM   600.0f     // + szum pomiaru
 #define REACQ_MM_PER_MS 1.6f       // + szybki krok 1,6 m/s
+// Filtry celu
+#define JUMP_MM         800.0f     // skok dalszy niz to (+ szybki krok) = inny cel w slocie
+#define STILL_MM        150.0f     // ...a blizszy przy malej predkosci = drganie pomiaru
+#define ALPHA_STILL     0.2f       // wygladzanie osoby stojacej (ok. 0,5 s)
+#define ALPHA_MOVE      0.6f       // ...i idacej (opoznienie ok. 70 ms)
+#define HOLD_MS         300u       // tyle przytrzymujemy cel zgubiony przez radar
+#define CONFIRM_MS      400u       // tyle nowy cel musi byc widoczny bez przerwy
+#define ZONE_HYST_MM    150.0f     // wyjscie ze strefy dopiero tyle za krawedzia
 
 void pz_cfg_default(pz_cfg_t *c) {
     c->max_dist_mm = 6000;
@@ -27,6 +35,58 @@ void pz_reset(pz_state_t *s) {
     memset(&s->room_tr, 0, sizeof(s->room_tr));
     memset(s->zone_tr, 0, sizeof(s->zone_tr));
     memset(s->t, 0, sizeof(s->t));
+    memset(s->f, 0, sizeof(s->f));
+}
+
+void pz_zones_changed(pz_state_t *s) {
+    memset(s->zone_tr, 0, sizeof(s->zone_tr));
+    for (int i = 0; i < PZ_TARGETS; i++) s->f[i].zmask = 0;
+}
+
+// Jedna ramka filtra slotu. true = cel istnieje (widoczny albo przytrzymany).
+static bool filt_step(pz_filt_t *f, const pz_raw_t *r, uint32_t now, bool *held) {
+    *held = false;
+    if (r->valid) {
+        float d = f->on ? hypotf(r->x - f->x, r->y - f->y) : 0;
+        if (!f->on || d > JUMP_MM + REACQ_MM_PER_MS * (float)(now - f->seen_ms)) {
+            // nowy cel (albo radar dal ten numer komus innemu) - od zera
+            f->on = true;
+            f->confirmed = false;
+            f->x = r->x;
+            f->y = r->y;
+            f->first_ms = now;
+            f->zmask = 0;
+        } else {
+            bool still = r->speed < MOVE_SPEED_CMS && r->speed > -MOVE_SPEED_CMS && d < STILL_MM;
+            float a = still ? ALPHA_STILL : ALPHA_MOVE;
+            f->x += a * (r->x - f->x);
+            f->y += a * (r->y - f->y);
+        }
+        f->speed = r->speed;
+        f->seen_ms = now;
+        if (!f->confirmed && now - f->first_ms >= CONFIRM_MS) f->confirmed = true;
+        return true;
+    }
+    if (!f->on) return false;
+    // Radar gubi osobe na 1-2 ramki - potwierdzony cel trzymamy w miejscu.
+    // Niepotwierdzony (pojedyncze ramki z odbic) przepada od razu.
+    if (f->confirmed && now - f->seen_ms < HOLD_MS) {
+        f->speed = 0;
+        *held = true;
+        return true;
+    }
+    f->on = false;
+    return false;
+}
+
+// Strefa z histereza: wejscie na krawedzi, wyjscie dopiero ZONE_HYST_MM dalej
+static bool in_zone_h(const pz_zone_t *z, float x, float y, bool was) {
+    if (!was) return pz_in_zone(z, x, y);
+    if (z->type == PZ_ZONE_OFF) return false;
+    float m = ZONE_HYST_MM;
+    float x1 = (z->x1 < z->x2 ? z->x1 : z->x2) - m, x2 = (z->x1 < z->x2 ? z->x2 : z->x1) + m;
+    float y1 = (z->y1 < z->y2 ? z->y1 : z->y2) - m, y2 = (z->y1 < z->y2 ? z->y2 : z->y1) + m;
+    return x >= x1 && x <= x2 && y >= y1 && y <= y2;
 }
 
 void pz_to_room(const pz_room_t *r, float tx, float ty, float *x, float *y) {
@@ -159,14 +219,22 @@ void pz_update(pz_state_t *s, const pz_raw_t raw[PZ_TARGETS], bool online, uint3
 
     for (int i = 0; i < PZ_TARGETS; i++) {
         pz_target_t *t = &s->t[i];
+        pz_filt_t *f = &s->f[i];
         memset(t, 0, sizeof(*t));
-        if (!raw[i].valid) continue;
+        bool held;
+        if (!filt_step(f, &raw[i], now, &held)) continue;
         t->valid = true;
-        t->rx = raw[i].x;
-        t->ry = raw[i].y;
-        t->speed = raw[i].speed;
-        t->dist = hypotf(raw[i].x, raw[i].y);
-        pz_to_room(&s->room, raw[i].x, raw[i].y, &t->x, &t->y);
+        t->held = held;
+        t->rx = (int16_t)lroundf(f->x);
+        t->ry = (int16_t)lroundf(f->y);
+        t->speed = f->speed;
+        t->dist = hypotf(f->x, f->y);
+        pz_to_room(&s->room, f->x, f->y, &t->x, &t->y);
+        // Strefy z histereza (pamietamy przynaleznosc z poprzedniej ramki)
+        uint8_t zm = 0;
+        for (int z = 0; z < PZ_MAX_ZONES; z++)
+            if (in_zone_h(&s->zones[z], t->x, t->y, f->zmask & (1u << z))) zm |= 1u << z;
+        f->zmask = zm;
         if (t->dist > s->cfg.max_dist_mm) { t->state = PZ_T_FAR; continue; }
         if (s->cfg.room_only && s->room.set && !in_room(&s->room, t->x, t->y)) {
             t->state = PZ_T_OUTSIDE;
@@ -174,14 +242,15 @@ void pz_update(pz_state_t *s, const pz_raw_t raw[PZ_TARGETS], bool online, uint3
         }
         t->state = PZ_T_OK;
         for (int z = 0; z < PZ_MAX_ZONES; z++)
-            if (s->zones[z].type == PZ_ZONE_IGNORE && pz_in_zone(&s->zones[z], t->x, t->y)) {
+            if (s->zones[z].type == PZ_ZONE_IGNORE && (zm & (1u << z))) {
                 t->state = PZ_T_IGNORED;
                 break;
             }
         if (t->state != PZ_T_OK) continue;
+        if (!f->confirmed) { t->state = PZ_T_PENDING; continue; }
         in_room_mask |= 1u << i;
         for (int z = 0; z < PZ_MAX_ZONES; z++)
-            if (s->zones[z].type == PZ_ZONE_DETECT && pz_in_zone(&s->zones[z], t->x, t->y)) {
+            if (s->zones[z].type == PZ_ZONE_DETECT && (zm & (1u << z))) {
                 t->zones |= 1u << z;
                 in_zone[z] |= 1u << i;
             }
